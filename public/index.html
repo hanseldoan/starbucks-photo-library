@@ -349,6 +349,32 @@
   const PUBLISHED_DATA_URL =
     "https://raw.githubusercontent.com/hanseldoan/starbucks-photo-library/main/data/images.json";
 
+  // raw.githubusercontent.com sits behind a CDN (Fastly) that can keep
+  // serving a stale response for MINUTES after a commit, even with a
+  // cache-busting query string — confirmed directly: right after publishing
+  // a 214-photo commit, this URL kept returning 211 for several minutes
+  // while the GitHub API below reflected the new commit immediately. That
+  // staleness was the actual cause of "Remove & Republish doesn't work" —
+  // the Library tab would reload after a successful remove and still show
+  // the pre-removal list, making it look like nothing happened (and letting
+  // you re-select and re-submit photos that were already gone). The GitHub
+  // Contents API is not behind that CDN and reflects `main` immediately, so
+  // the admin UI (this file) reads from it for anything that needs to be
+  // accurate right after a write. The Figma plugin itself still reads
+  // PUBLISHED_DATA_URL above — that's a separate, lower-stakes read path
+  // and not worth the extra API calls/rate limit.
+  const PUBLISHED_API_URL =
+    "https://api.github.com/repos/hanseldoan/starbucks-photo-library/contents/data/images.json?ref=main";
+
+  async function fetchPublishedFresh() {
+    const res = await fetch(PUBLISHED_API_URL, {
+      headers: { Accept: "application/vnd.github.raw+json" },
+      cache: "no-store",
+    });
+    if (!res.ok) throw new Error("GitHub API fetch failed: " + res.status);
+    return res.json();
+  }
+
   // ── Tab switching ──────────────────────────────────────────
 
   function switchTab(name, evt) {
@@ -589,11 +615,11 @@
   async function loadLibrary() {
     setLibStatus("Loading published library...", "loading");
     try {
-      // Cache-bust — raw.githubusercontent.com caches responses briefly,
-      // and we want this tab to reflect the true current state.
-      const res  = await fetch(PUBLISHED_DATA_URL + "?t=" + Date.now());
-      if (!res.ok) throw new Error("GitHub fetch failed: " + res.status);
-      const data = await res.json();
+      // Reads via the GitHub API, not the raw.githubusercontent.com CDN —
+      // see the comment on PUBLISHED_API_URL above for why: the CDN can
+      // stay stale for minutes and was making removals look like they
+      // silently failed or didn't take effect.
+      const data = await fetchPublishedFresh();
       libraryImages = data;
       libSelectedUrls.clear();
       updateLibSelectionUI();
@@ -605,8 +631,7 @@
   }
 
   function updateLibraryBadge() {
-    fetch(PUBLISHED_DATA_URL + "?t=" + Date.now())
-      .then(r => r.json())
+    fetchPublishedFresh()
       .then(updateLibraryBadgeFromData)
       .catch(() => {});
   }
@@ -662,14 +687,16 @@
       const urlsToRemove = new Set(libSelectedUrls);
       const count = urlsToRemove.size;
 
-      // Re-fetch the true published state fresh from GitHub right before
-      // diffing — libraryImages may be stale (e.g. loaded minutes ago, or
-      // changed by another tab/session), and diffing against stale data was
-      // the root cause of the wrong photos getting removed.
+      // Re-fetch the true published state fresh right before diffing —
+      // libraryImages may be stale (loaded minutes ago, changed by another
+      // tab/session, etc). This MUST go through the GitHub API, not
+      // raw.githubusercontent.com: that URL sits behind a CDN that can
+      // serve a stale response for minutes after a commit even with a
+      // cache-busting query string, which was making removals look like
+      // they silently failed (the reload afterward would show the
+      // pre-removal list again).
       setLibStatus("Checking current published library...", "loading");
-      const freshRes = await fetch(PUBLISHED_DATA_URL + "?t=" + Date.now());
-      if (!freshRes.ok) throw new Error("GitHub fetch failed: " + freshRes.status);
-      const freshImages = await freshRes.json();
+      const freshImages = await fetchPublishedFresh();
 
       const remaining = freshImages.filter((img) => !urlsToRemove.has(img.url));
 
