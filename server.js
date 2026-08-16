@@ -347,12 +347,36 @@ app.post("/api/download", async (req, res) => {
 // /api/remove-from-plugin routes, which all worked by writing directly into
 // a local plugin file and no longer apply now that the plugin fetches from
 // GitHub instead.
+//
+// Accepts either:
+//   { urls: [...] }   — publish the subset of LOCAL data/images.json matching
+//                        these URLs. Used by the Scraper tab, where the
+//                        images genuinely originate from this server's local
+//                        scrape data.
+//   { images: [...] } — publish these exact image objects verbatim, with NO
+//                        filtering against local data. Used by the Library
+//                        tab's "remove and republish" flow: the client
+//                        already has the true current published list (fetched
+//                        fresh from GitHub) and just wants to write back a
+//                        subset of it. Filtering that against local data was
+//                        the bug — if local data/images.json ever diverges
+//                        from what's actually published (e.g. after a
+//                        redeploy resets the local file), the old code would
+//                        silently drop any "remaining" photo that local
+//                        didn't happen to have, removing photos nobody asked
+//                        to remove.
 app.post("/api/publish", async (req, res) => {
-  const { urls } = req.body; // optional: publish only a reviewed subset
-  const all = readDataFile();
-  const toPublish = urls && urls.length ? all.filter((img) => urls.includes(img.url)) : all;
+  const { urls, images } = req.body;
 
-  if (toPublish.length === 0) {
+  let toPublish;
+  if (images && images.length) {
+    toPublish = images;
+  } else {
+    const all = readDataFile();
+    toPublish = urls && urls.length ? all.filter((img) => urls.includes(img.url)) : all;
+  }
+
+  if (!toPublish || toPublish.length === 0) {
     return res.status(400).json({ error: "Nothing to publish" });
   }
 
