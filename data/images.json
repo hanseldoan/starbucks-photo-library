@@ -380,6 +380,26 @@
     "source": "stories"
   },
   {
+    "url": "https://about.starbucks.com/uploads/2020/08/Starbucks-Virtual-Backgrounds-2-Cold-Brew-1920x1280-1-768x512.jpg",
+    "figmaLabel": "Coffee Our coffee story — Starbucks Virtual Backgrounds 2 Cold Brew 1920x1280 1 (3)",
+    "title": "Coffee Our coffee story",
+    "pageUrl": "https://about.starbucks.com/stories/category/coffee-craft/coffee/",
+    "width": 1920,
+    "height": 1280,
+    "timestamp": "2026-08-12T14:38:10.790Z",
+    "labels": [
+      "coffee",
+      "story",
+      "https",
+      "about",
+      "starbucks",
+      "stories",
+      "category",
+      "craft"
+    ],
+    "source": "stories"
+  },
+  {
     "url": "https://about.starbucks.com/uploads/2024/09/20240514_PA080_Duetto-Coffee-Tasting_FY24_Q2_059-1024x682.jpg",
     "figmaLabel": "Coffee Our coffee story — Pa080 Duetto Coffee Tasting Fy24 Q2 059",
     "title": "Coffee Our coffee story",
@@ -1679,28 +1699,6 @@
   {
     "url": "https://about.starbucks.com/uploads/2026/07/SBX-SUM2-26_35_BlendedPinkEnergyDrink-MangoDreamEnergy-MangoDragonfruitLemonade_sRGB-1280x1280-1.jpeg",
     "figmaLabel": "Drinks & Food One cup at a time — Sbx Sum2 26 35 Blendedpinkenergydrink Mangodreamenergy Mangodragonfruitlemonade Srgb",
-    "title": "Drinks & Food One cup at a time",
-    "pageUrl": "https://about.starbucks.com/stories/category/coffee-craft/drinks-food/",
-    "width": 1280,
-    "height": 1280,
-    "timestamp": "2026-08-12T14:38:21.201Z",
-    "labels": [
-      "drinks",
-      "food",
-      "time",
-      "https",
-      "about",
-      "starbucks",
-      "stories",
-      "category",
-      "coffee",
-      "craft"
-    ],
-    "source": "stories"
-  },
-  {
-    "url": "https://about.starbucks.com/uploads/2026/07/SBX-SUM2-26_35_BlendedPinkEnergyDrink-MangoDreamEnergy-MangoDragonfruitLemonade_sRGB-1280x1280-1-223x300.jpeg",
-    "figmaLabel": "Drinks & Food One cup at a time — Sbx Sum2 26 35 Blendedpinkenergydrink Mangodreamenergy Mangodragonfruitlemonade Srgb 1280x1280 1",
     "title": "Drinks & Food One cup at a time",
     "pageUrl": "https://about.starbucks.com/stories/category/coffee-craft/drinks-food/",
     "width": 1280,
