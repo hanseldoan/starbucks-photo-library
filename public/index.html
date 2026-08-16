@@ -100,6 +100,9 @@
       align-items: center;
       gap: 10px;
       flex-wrap: wrap;
+      position: sticky;
+      top: 0;
+      z-index: 10;
     }
 
     .btn {
@@ -339,6 +342,7 @@
 
   let libraryImages   = [];  // images currently live on GitHub (what the plugin fetches)
   let libSelectedUrls = new Set();
+  let libBusy         = false; // re-entry guard for remove/republish
 
   // Same URL the Figma plugin itself fetches at load time — this tab is a
   // read/manage view onto that exact live file, not a separate database.
@@ -648,25 +652,55 @@
 
   async function removeSelected() {
     if (libSelectedUrls.size === 0) return;
-
-    const count = libSelectedUrls.size;
-    const remaining = libraryImages.filter((img) => !libSelectedUrls.has(img.url));
-
-    if (remaining.length === 0) {
-      setLibStatus("Can't remove every photo from here — the publish endpoint requires at least one photo. Edit data/images.json directly on GitHub if you really want an empty library.", "error");
-      return;
-    }
-
-    const confirmed = confirm(`Remove ${count} photo${count > 1 ? "s" : ""} from the published library? This republishes the remaining ${remaining.length} photo${remaining.length === 1 ? "" : "s"} to GitHub.`);
-    if (!confirmed) return;
-
-    setLibStatus(`Removing ${count} photo${count > 1 ? "s" : ""} and republishing...`, "loading");
+    if (libBusy) return; // guard against double-invocation (e.g. double-click)
+    libBusy = true;
+    document.getElementById("removeSelectedBtn").disabled = true;
 
     try {
+      // Snapshot the URLs the user actually picked BEFORE any await, so a
+      // confirm() dialog or refresh in between can't change what we act on.
+      const urlsToRemove = new Set(libSelectedUrls);
+      const count = urlsToRemove.size;
+
+      // Re-fetch the true published state fresh from GitHub right before
+      // diffing — libraryImages may be stale (e.g. loaded minutes ago, or
+      // changed by another tab/session), and diffing against stale data was
+      // the root cause of the wrong photos getting removed.
+      setLibStatus("Checking current published library...", "loading");
+      const freshRes = await fetch(PUBLISHED_DATA_URL + "?t=" + Date.now());
+      if (!freshRes.ok) throw new Error("GitHub fetch failed: " + freshRes.status);
+      const freshImages = await freshRes.json();
+
+      const remaining = freshImages.filter((img) => !urlsToRemove.has(img.url));
+
+      if (remaining.length === freshImages.length) {
+        setLibStatus("Nothing to remove — those photos are no longer in the published library (it may have changed since this page loaded). Reloading...", "error");
+        await loadLibrary();
+        return;
+      }
+
+      if (remaining.length === 0) {
+        setLibStatus("Can't remove every photo from here — the publish endpoint requires at least one photo. Edit data/images.json directly on GitHub if you really want an empty library.", "error");
+        return;
+      }
+
+      const confirmed = confirm(`Remove ${count} photo${count > 1 ? "s" : ""} from the published library? This republishes the remaining ${remaining.length} photo${remaining.length === 1 ? "" : "s"} to GitHub.`);
+      if (!confirmed) {
+        setLibStatus("");
+        return;
+      }
+
+      setLibStatus(`Removing ${count} photo${count > 1 ? "s" : ""} and republishing...`, "loading");
+
+      // Send the full, verbatim image objects for the remaining set — not
+      // just URLs to be re-matched against the server's local data. The
+      // server's local data/images.json can diverge from what's actually
+      // published on GitHub (e.g. after a redeploy), so filtering by URL
+      // there could silently drop photos nobody asked to remove.
       const res = await fetch("/api/publish", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ urls: remaining.map((img) => img.url) }),
+        body: JSON.stringify({ images: remaining }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Remove failed");
@@ -675,6 +709,9 @@
       await loadLibrary(); // refresh from GitHub
     } catch (err) {
       setLibStatus("Remove failed: " + err.message, "error");
+    } finally {
+      libBusy = false;
+      updateLibSelectionUI();
     }
   }
 
