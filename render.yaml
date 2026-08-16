@@ -3,7 +3,15 @@ services:
     name: starbucks-photo-library
     runtime: node
     plan: free
-    buildCommand: npm install
+    # Puppeteer's postinstall step downloads Chrome to its cache dir during
+    # `npm install`. On Render's native Node runtime, anything written
+    # outside the project directory during build isn't guaranteed to still
+    # be there when the service actually starts — so `npx puppeteer browsers
+    # install chrome` (explicit, not just relying on the postinstall hook)
+    # plus pointing PUPPETEER_CACHE_DIR at a path *inside* the project
+    # directory (below) keeps the downloaded browser with the rest of the
+    # deployed app instead of getting dropped between build and runtime.
+    buildCommand: npm install && npx puppeteer browsers install chrome
     startCommand: node server.js
     envVars:
       - key: GITHUB_TOKEN
@@ -18,6 +26,8 @@ services:
         sync: false # set manually — shared secret for the scheduled-scrape endpoint
       - key: PORT
         value: 3000
+      - key: PUPPETEER_CACHE_DIR
+        value: /opt/render/project/src/.cache/puppeteer
 
 # Optional: uncomment to let Render itself trigger the monthly scrape by
 # calling the app's own protected endpoint. Render Cron Jobs run as a
