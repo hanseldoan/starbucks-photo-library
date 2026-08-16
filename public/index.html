@@ -53,6 +53,7 @@
   </div>
   <div class="toolbar">
     <button class="btn-primary" id="scanBtn">Scan for Photos</button>
+    <button class="btn-secondary" id="selectAllBtn" disabled>Select All</button>
     <button class="btn-secondary" id="downloadBtn" disabled>Download Selected</button>
     <button class="btn-publish" id="publishBtn" disabled>Publish Selected to Library</button>
   </div>
@@ -67,6 +68,7 @@
   const statusEl = document.getElementById("status");
   const gridEl = document.getElementById("grid");
   const scanBtn = document.getElementById("scanBtn");
+  const selectAllBtn = document.getElementById("selectAllBtn");
   const downloadBtn = document.getElementById("downloadBtn");
   const publishBtn = document.getElementById("publishBtn");
 
@@ -81,6 +83,9 @@
     statusEl.textContent = `${images.length} photo${images.length === 1 ? "" : "s"} in database · ${selected.size} selected`;
     downloadBtn.disabled = selected.size === 0;
     publishBtn.disabled = selected.size === 0;
+    selectAllBtn.disabled = images.length === 0;
+    const allSelected = images.length > 0 && selected.size === images.length;
+    selectAllBtn.textContent = allSelected ? "Deselect All" : "Select All";
 
     if (images.length === 0) {
       gridEl.innerHTML = `<div class="empty">No photos yet. Click "Scan for Photos" to run a scrape.</div>`;
@@ -115,6 +120,16 @@
     scanBtn.disabled = false;
     // Poll once after a delay; a real deployment might use SSE/polling for live progress.
     setTimeout(loadImages, 60000);
+  });
+
+  selectAllBtn.addEventListener("click", () => {
+    const allSelected = images.length > 0 && selected.size === images.length;
+    if (allSelected) {
+      selected.clear();
+    } else {
+      images.forEach((img) => selected.add(img.url));
+    }
+    render();
   });
 
   downloadBtn.addEventListener("click", async () => {
