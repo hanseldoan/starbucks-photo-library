@@ -1,0 +1,16 @@
+{
+  "name": "Starbucks Stock Images",
+  "id": "1669101964161041325",
+  "documentAccess": "dynamic-page",
+  "api": "1.0.0",
+  "main": "code.js",
+  "ui": "ui.html",
+  "editorType": ["figma"],
+  "networkAccess": {
+    "allowedDomains": [
+      "https://about.starbucks.com",
+      "https://raw.githubusercontent.com"
+    ],
+    "reasoning": "Fetches Starbucks brand stock images from the official press site, and fetches the current photo database (data/images.json) from the starbucks-photo-library GitHub repo instead of embedding it in the plugin."
+  }
+}
