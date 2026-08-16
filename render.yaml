@@ -1,0 +1,45 @@
+services:
+  - type: web
+    name: starbucks-photo-library
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: GITHUB_TOKEN
+        sync: false # set manually in the Render dashboard — never commit this
+      - key: GITHUB_OWNER
+        value: hanseldoan
+      - key: GITHUB_REPO
+        value: starbucks-photo-library
+      - key: GITHUB_BRANCH
+        value: main
+      - key: CRON_SECRET
+        sync: false # set manually — shared secret for the scheduled-scrape endpoint
+      - key: PORT
+        value: 3000
+
+# Optional: uncomment to let Render itself trigger the monthly scrape by
+# calling the app's own protected endpoint. Render Cron Jobs run as a
+# separate one-off job (not part of the free web service's uptime), so
+# this fires reliably even while the web service is asleep.
+#
+# NOTE: verify Render Cron Jobs are actually available on the free plan
+# before relying on this — that may require a paid plan. The
+# .github/workflows/monthly-scrape.yml in this repo is the confirmed-free
+# alternative (GitHub Actions' free scheduled-workflow minutes) and is set
+# up as the default; use whichever one you actually want live, not both.
+#
+# - type: cron
+#   name: starbucks-photo-library-monthly-scrape
+#   runtime: node
+#   schedule: "0 0 1 * *"
+#   buildCommand: npm install
+#   startCommand: >
+#     node -e "
+#     require('https').request('https://YOUR-RENDER-URL.onrender.com/api/cron/scrape-and-publish',
+#     { method: 'POST', headers: { 'X-Cron-Secret': process.env.CRON_SECRET } }, res => res.on('data', () => {})).end()
+#     "
+#   envVars:
+#     - key: CRON_SECRET
+#       sync: false
