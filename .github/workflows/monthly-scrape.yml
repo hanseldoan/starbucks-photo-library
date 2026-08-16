@@ -1,0 +1,28 @@
+name: Monthly scrape
+
+# Runs on the 1st of each month and calls the deployed Render app's
+# protected scrape+publish endpoint. GitHub Actions' scheduled-workflow
+# minutes are free on this plan, so this is the reliable trigger — it
+# doesn't depend on the Render service staying awake between runs; the
+# HTTP request itself wakes it up.
+#
+# Setup:
+#   1. Deploy this repo to Render (see README.md) and set CRON_SECRET
+#      there to some random string.
+#   2. In this repo's GitHub Settings → Secrets and variables → Actions,
+#      add two repo secrets: RENDER_APP_URL (e.g. https://your-app.onrender.com)
+#      and CRON_SECRET (same value as on Render).
+
+on:
+  schedule:
+    - cron: "0 0 1 * *"
+  workflow_dispatch: {} # lets you trigger it manually from the Actions tab too
+
+jobs:
+  trigger-scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call scrape-and-publish endpoint
+        run: |
+          curl -f -X POST "${{ secrets.RENDER_APP_URL }}/api/cron/scrape-and-publish" \
+            -H "X-Cron-Secret: ${{ secrets.CRON_SECRET }}"
