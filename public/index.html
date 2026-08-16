@@ -1,171 +1,740 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Starbucks Photo Library</title>
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background: #faf7f2;
-    color: #1c1b1a;
-    padding: 24px;
-  }
-  header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
-  h1 { font-size: 20px; }
-  .status { font-size: 13px; color: #6b6b6b; }
-  .toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
-  button {
-    border: none; border-radius: 6px; padding: 9px 16px; font-size: 13px; font-weight: 600;
-    cursor: pointer; transition: opacity 0.15s;
-  }
-  button:disabled { opacity: 0.5; cursor: not-allowed; }
-  .btn-primary { background: #00754a; color: #fff; }
-  .btn-secondary { background: #e5e0d8; color: #1c1b1a; }
-  .btn-publish { background: #1c1b1a; color: #fff; }
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 12px;
-  }
-  .card {
-    position: relative; border-radius: 8px; overflow: hidden; cursor: pointer;
-    border: 2px solid transparent; background: #fff;
-  }
-  .card.selected { border-color: #00754a; }
-  .card img { width: 100%; height: 130px; object-fit: cover; display: block; }
-  .card .label { font-size: 11px; padding: 6px 8px; color: #333; }
-  .card .check {
-    position: absolute; top: 6px; right: 6px; width: 18px; height: 18px; border-radius: 50%;
-    background: #fff; border: 2px solid #ccc; display: flex; align-items: center; justify-content: center; font-size: 11px;
-  }
-  .card.selected .check { background: #00754a; border-color: #00754a; color: #fff; }
-  .empty { padding: 40px; text-align: center; color: #888; }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Starbucks Photo Library</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:            #ffffff;
+      --bg-secondary:  #f5f5f5;
+      --bg-tertiary:   #e6e6e6;
+      --text:          #000000e5;
+      --text-secondary:#00000080;
+      --text-tertiary: #0000004d;
+      --border:        #e6e6e6;
+      --accent:        #0d99ff;
+      --accent-hover:  #007be5;
+      --text-onaccent: #ffffff;
+      --success:       #0f8a4f;
+      --danger:        #d4351c;
+      --danger-hover:  #b02d17;
+      --radius:        5px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      font-size: 13px;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: var(--bg);
+      color: var(--text);
+      padding: 20px 32px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 16px;
+    }
+    .header-title { font-size: 15px; font-weight: 600; }
+    .header-sub   { font-size: 12px; color: var(--text-secondary); margin-top: 3px; }
+
+    /* ── Tabs ── */
+    .tabs {
+      display: flex;
+      gap: 4px;
+    }
+    .tab {
+      padding: 9px 4px;
+      margin-right: 20px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      cursor: pointer;
+      border: none;
+      border-bottom: 2px solid transparent;
+      background: transparent;
+      transition: color 0.15s, border-color 0.15s;
+      position: relative;
+    }
+    .tab:hover { color: var(--text); }
+    .tab.active {
+      color: var(--text);
+      border-bottom-color: var(--accent);
+      font-weight: 600;
+    }
+    .tab .tab-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--accent);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      min-width: 17px;
+      height: 17px;
+      border-radius: var(--radius);
+      padding: 0 5px;
+      margin-left: 6px;
+    }
+
+    /* ── Tab panels ── */
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    /* ── Toolbar ── */
+    .toolbar {
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 32px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 7px 14px;
+      border-radius: var(--radius);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: background 0.15s, opacity 0.15s, border-color 0.15s;
+    }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .btn-primary   { background: var(--accent); color: var(--text-onaccent); }
+    .btn-primary:not(:disabled):hover { background: var(--accent-hover); }
+
+    .btn-secondary { background: var(--text); color: var(--bg); }
+    .btn-secondary:not(:disabled):hover { opacity: 0.85; }
+
+    .btn-publish { background: var(--text); color: var(--bg); display: none; }
+    .btn-publish:not(:disabled):hover { opacity: 0.85; }
+    .btn-publish.visible { display: inline-block; }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-secondary);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:not(:disabled):hover { color: var(--text); border-color: var(--text-tertiary); }
+
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-danger:not(:disabled):hover { background: var(--danger-hover); }
+
+    .selection-count { font-size: 12px; color: var(--text-secondary); margin-left: 4px; }
+
+    /* ── Status bar ── */
+    .status-bar {
+      padding: 9px 32px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-secondary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 36px;
+    }
+    .status-bar.loading { color: var(--accent); }
+    .status-bar.error   { color: var(--danger); }
+    .status-bar.success { color: var(--success); font-weight: 600; }
+    .status-bar a { color: inherit; }
+
+    .spinner {
+      width: 12px; height: 12px;
+      border: 2px solid rgba(13,153,255,0.2);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Grids ── */
+    .grid-wrap { padding: 24px 32px; }
+
+    .grid {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+    }
+
+    .masonry-col {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      gap: 16px;
+    }
+
+    /* ── Cards (shared) ── */
+    .card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      cursor: pointer;
+      transition: border-color 0.15s, box-shadow 0.15s, opacity 0.15s;
+      position: relative;
+    }
+    .card:hover {
+      border-color: var(--accent);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+      opacity: 1 !important;
+    }
+    .card.selected {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(13,153,255,0.2);
+      opacity: 1 !important;
+    }
+    .grid.has-selection .card:not(.selected) { opacity: 0.5; }
+
+    /* Library card — red border on selected for removal */
+    .lib-card.selected {
+      border-color: var(--danger);
+      box-shadow: 0 0 0 2px rgba(212,53,28,0.18);
+    }
+    .grid.has-selection .lib-card:not(.selected) { opacity: 0.5; }
+
+    .card-img-wrap {
+      width: 100%;
+      overflow: hidden;
+      background: var(--bg-secondary);
+      position: relative;
+    }
+    .card-img-wrap img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .card-check {
+      position: absolute; top: 6px; left: 6px;
+      width: 18px; height: 18px;
+      background: var(--accent);
+      border: 1px solid var(--accent-hover);
+      border-radius: var(--radius);
+      display: none;
+      align-items: center; justify-content: center;
+      z-index: 2;
+    }
+    .card.selected .card-check { display: flex; }
+
+    /* Library remove badge — red X, same rounded-square treatment */
+    .card-remove {
+      position: absolute; top: 6px; right: 6px;
+      width: 18px; height: 18px;
+      background: var(--danger);
+      border: 1px solid var(--danger-hover);
+      border-radius: var(--radius);
+      display: none;
+      align-items: center; justify-content: center;
+      z-index: 2;
+      font-size: 11px;
+      color: #fff;
+      font-weight: 700;
+      line-height: 1;
+    }
+    .lib-card.selected .card-remove { display: flex; }
+
+    .card-info    { padding: 10px 12px 12px; }
+    .card-title   {
+      font-size: 12px; font-weight: 500;
+      color: var(--text); line-height: 1.4; margin-bottom: 4px;
+      display: -webkit-box; -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .card-meta    { font-size: 11px; color: var(--text-secondary); }
+
+    /* ── Empty state ── */
+    .empty-state { text-align: center; padding: 80px 20px; color: var(--text-secondary); grid-column: 1/-1; width: 100%; }
+    .empty-state h2 { font-size: 16px; font-weight: 500; margin-bottom: 8px; color: var(--text); }
+    .empty-state p  { font-size: 13px; line-height: 1.6; }
+
+    @media (max-width: 600px) {
+      .header, .toolbar, .grid-wrap, .status-bar { padding-left: 16px; padding-right: 16px; }
+    }
+  </style>
 </head>
 <body>
 
-<header>
-  <div>
-    <h1>Starbucks Photo Library</h1>
-    <div class="status" id="status">Loading…</div>
+<!-- Header + Tabs -->
+<div class="header">
+  <div class="header-top">
+    <div>
+      <div class="header-title">Starbucks Photo Library</div>
+      <div class="header-sub">about.starbucks.com — high-res photos, published to GitHub for the Figma plugin</div>
+    </div>
   </div>
-  <div class="toolbar">
-    <button class="btn-primary" id="scanBtn">Scan for Photos</button>
-    <button class="btn-secondary" id="selectAllBtn" disabled>Select All</button>
-    <button class="btn-secondary" id="downloadBtn" disabled>Download Selected</button>
-    <button class="btn-publish" id="publishBtn" disabled>Publish Selected to Library</button>
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('scraper', event)">Scraper</button>
+    <button class="tab" id="libraryTab" onclick="switchTab('library', event)">
+      Library <span class="tab-badge" id="libraryBadge">0</span>
+    </button>
   </div>
-</header>
+</div>
 
-<div id="grid" class="grid"></div>
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- SCRAPER PANEL                                             -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div id="panel-scraper" class="panel active">
+
+  <div class="toolbar">
+    <button class="btn btn-primary" id="scanBtn" onclick="startScan()">Scan for Photos</button>
+    <button class="btn btn-secondary" id="downloadBtn" onclick="downloadSelected()" disabled>Download Selected</button>
+    <button class="btn btn-publish" id="publishBtn" onclick="publishSelected()">Publish Selected to Library</button>
+    <button class="btn btn-ghost" id="selectAllBtn" onclick="selectAll()" style="display:none">Select All</button>
+    <button class="btn btn-ghost" id="clearBtn" onclick="clearSelection()" style="display:none">Clear Selection</button>
+    <span class="selection-count" id="selectionCount"></span>
+  </div>
+
+  <div class="status-bar" id="statusBar">
+    Ready — click "Scan for Photos" to fetch the latest photos from about.starbucks.com.
+  </div>
+
+  <div class="grid-wrap">
+    <div class="grid" id="grid"></div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- LIBRARY PANEL — mirrors what's currently published on      -->
+<!-- GitHub (the same data/images.json the Figma plugin fetches) -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div id="panel-library" class="panel">
+
+  <div class="toolbar">
+    <button class="btn btn-danger" id="removeSelectedBtn" onclick="removeSelected()" disabled>Remove Selected &amp; Republish</button>
+    <button class="btn btn-ghost" id="libSelectAllBtn" onclick="libSelectAll()">Select All</button>
+    <button class="btn btn-ghost" id="libClearBtn" onclick="libClearSelection()">Clear Selection</button>
+    <span class="selection-count" id="libSelectionCount"></span>
+  </div>
+
+  <div class="status-bar" id="libStatusBar">
+    Photos currently published and live for the Figma plugin.
+  </div>
+
+  <div class="grid-wrap">
+    <div class="grid" id="libGrid"></div>
+  </div>
+
+</div>
 
 <script>
-  let images = [];
-  const selected = new Set();
+  // ── State ──────────────────────────────────────────────────
+  let allImages     = [];   // scraper results (local data/images.json via /api/images)
+  let selectedUrls  = new Set();
 
-  const statusEl = document.getElementById("status");
-  const gridEl = document.getElementById("grid");
-  const scanBtn = document.getElementById("scanBtn");
-  const selectAllBtn = document.getElementById("selectAllBtn");
-  const downloadBtn = document.getElementById("downloadBtn");
-  const publishBtn = document.getElementById("publishBtn");
+  let libraryImages   = [];  // images currently live on GitHub (what the plugin fetches)
+  let libSelectedUrls = new Set();
+
+  // Same URL the Figma plugin itself fetches at load time — this tab is a
+  // read/manage view onto that exact live file, not a separate database.
+  const PUBLISHED_DATA_URL =
+    "https://raw.githubusercontent.com/hanseldoan/starbucks-photo-library/main/data/images.json";
+
+  // ── Tab switching ──────────────────────────────────────────
+
+  function switchTab(name, evt) {
+    document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+    document.getElementById("panel-" + name).classList.add("active");
+    (evt ? evt.currentTarget : document.getElementById(name + "Tab") || document.querySelector(".tab")).classList.add("active");
+
+    if (name === "library") loadLibrary();
+  }
+
+  // ── Status helpers ─────────────────────────────────────────
+
+  function setStatus(message, type = "default") {
+    const bar = document.getElementById("statusBar");
+    bar.className = "status-bar " + type;
+    bar.innerHTML = type === "loading"
+      ? `<div class="spinner"></div> ${message}`
+      : message;
+  }
+
+  function setLibStatus(message, type = "default") {
+    const bar = document.getElementById("libStatusBar");
+    bar.className = "status-bar " + type;
+    bar.innerHTML = type === "loading"
+      ? `<div class="spinner"></div> ${message}`
+      : message;
+  }
+
+  // ── SCRAPER: Load saved images ─────────────────────────────
 
   async function loadImages() {
-    statusEl.textContent = "Loading…";
-    const res = await fetch("/api/images");
-    images = await res.json();
-    render();
-  }
-
-  function render() {
-    statusEl.textContent = `${images.length} photo${images.length === 1 ? "" : "s"} in database · ${selected.size} selected`;
-    downloadBtn.disabled = selected.size === 0;
-    publishBtn.disabled = selected.size === 0;
-    selectAllBtn.disabled = images.length === 0;
-    const allSelected = images.length > 0 && selected.size === images.length;
-    selectAllBtn.textContent = allSelected ? "Deselect All" : "Select All";
-
-    if (images.length === 0) {
-      gridEl.innerHTML = `<div class="empty">No photos yet. Click "Scan for Photos" to run a scrape.</div>`;
-      return;
+    try {
+      const res    = await fetch("/api/images");
+      const images = await res.json();
+      allImages    = images;
+      renderGrid(images);
+      if (images.length > 0) {
+        setStatus(`${images.length} photo${images.length === 1 ? "" : "s"} in database.`);
+        showGridControls(true);
+      } else {
+        setStatus('No photos yet — click "Scan for Photos" to get started.');
+      }
+    } catch (err) {
+      setStatus("Could not load saved images: " + err.message, "error");
     }
-
-    gridEl.innerHTML = images
-      .map(
-        (img, i) => `
-      <div class="card ${selected.has(img.url) ? "selected" : ""}" data-i="${i}">
-        <div class="check">${selected.has(img.url) ? "✓" : ""}</div>
-        <img src="${img.url}" loading="lazy" alt="${img.title || ""}" />
-        <div class="label">${img.figmaLabel || img.title || ""}</div>
-      </div>`
-      )
-      .join("");
-
-    gridEl.querySelectorAll(".card").forEach((card) => {
-      card.addEventListener("click", () => {
-        const img = images[parseInt(card.dataset.i, 10)];
-        if (selected.has(img.url)) selected.delete(img.url);
-        else selected.add(img.url);
-        render();
-      });
-    });
   }
 
-  scanBtn.addEventListener("click", async () => {
-    scanBtn.disabled = true;
-    statusEl.textContent = "Scraping started — this runs in the background, check back in a bit…";
-    await fetch("/api/scrape", { method: "POST" });
-    scanBtn.disabled = false;
-    // Poll once after a delay; a real deployment might use SSE/polling for live progress.
-    setTimeout(loadImages, 60000);
-  });
+  // ── SCRAPER: Scan ──────────────────────────────────────────
 
-  selectAllBtn.addEventListener("click", () => {
-    const allSelected = images.length > 0 && selected.size === images.length;
+  async function startScan() {
+    const btn = document.getElementById("scanBtn");
+    btn.disabled = true;
+    setStatus("Scan started — this runs in the background and can take a few minutes.", "loading");
+
+    try {
+      await fetch("/api/scrape", { method: "POST" });
+      setStatus("Scan in progress — waiting for results...", "loading");
+      pollForResults();
+    } catch (err) {
+      setStatus("Failed to start scan: " + err.message, "error");
+      btn.disabled = false;
+    }
+  }
+
+  let pollInterval = null;
+
+  function pollForResults() {
+    if (pollInterval) clearInterval(pollInterval);
+    const previousCount = allImages.length;
+
+    pollInterval = setInterval(async () => {
+      try {
+        const res    = await fetch("/api/images");
+        const images = await res.json();
+        if (images.length !== previousCount) {
+          clearInterval(pollInterval);
+          allImages = images;
+          renderGrid(images);
+          setStatus(`Scan complete — ${images.length} photos in database.`);
+          showGridControls(true);
+          document.getElementById("scanBtn").disabled = false;
+        }
+      } catch { /* ignore, keep polling */ }
+    }, 5000);
+
+    setTimeout(() => {
+      clearInterval(pollInterval);
+      document.getElementById("scanBtn").disabled = false;
+      setStatus("Scan may still be running. Refresh the page to see results.");
+    }, 10 * 60 * 1000);
+  }
+
+  // ── SCRAPER: Selection ─────────────────────────────────────
+
+  function toggleSelect(url) {
+    selectedUrls.has(url) ? selectedUrls.delete(url) : selectedUrls.add(url);
+    updateSelectionUI();
+    renderGrid(allImages);
+  }
+
+  function selectAll() {
+    const allSelected = allImages.length > 0 && selectedUrls.size === allImages.length;
     if (allSelected) {
-      selected.clear();
+      selectedUrls.clear();
     } else {
-      images.forEach((img) => selected.add(img.url));
+      allImages.forEach((img) => selectedUrls.add(img.url));
     }
-    render();
-  });
+    updateSelectionUI();
+    renderGrid(allImages);
+  }
 
-  downloadBtn.addEventListener("click", async () => {
-    const urls = Array.from(selected);
-    const res = await fetch("/api/download", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ urls }),
-    });
-    const blob = await res.blob();
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = "starbucks-images.zip";
-    link.click();
-  });
+  function clearSelection() {
+    selectedUrls.clear();
+    updateSelectionUI();
+    renderGrid(allImages);
+  }
 
-  publishBtn.addEventListener("click", async () => {
-    const urls = Array.from(selected);
+  function updateSelectionUI() {
+    const count = selectedUrls.size;
+    document.getElementById("selectionCount").textContent = count > 0 ? `${count} selected` : "";
+    document.getElementById("downloadBtn").disabled = count === 0;
+    const publishBtn = document.getElementById("publishBtn");
+    count > 0 ? publishBtn.classList.add("visible") : publishBtn.classList.remove("visible");
+    const allSelected = allImages.length > 0 && count === allImages.length;
+    document.getElementById("selectAllBtn").textContent = allSelected ? "Deselect All" : "Select All";
+  }
+
+  // ── SCRAPER: Publish to library (GitHub) ───────────────────
+
+  async function publishSelected() {
+    if (selectedUrls.size === 0) return;
+
+    const publishBtn = document.getElementById("publishBtn");
     publishBtn.disabled = true;
-    statusEl.textContent = "Publishing to GitHub…";
+    setStatus(`Publishing ${selectedUrls.size} photo${selectedUrls.size === 1 ? "" : "s"} to the library...`, "loading");
+
     try {
       const res = await fetch("/api/publish", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ urls }),
+        body: JSON.stringify({ urls: Array.from(selectedUrls) }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Publish failed");
-      statusEl.textContent = `Published ${data.published} photos. Commit: ${data.commitUrl}`;
-    } catch (e) {
-      statusEl.textContent = `Publish failed: ${e.message}`;
-    }
-    publishBtn.disabled = false;
-  });
 
+      setStatus(`✓ Published ${data.published} photo${data.published === 1 ? "" : "s"}. <a href="${data.commitUrl}" target="_blank" rel="noopener">View commit</a>`, "success");
+      updateLibraryBadge();
+    } catch (err) {
+      setStatus("Publish failed: " + err.message, "error");
+    } finally {
+      publishBtn.disabled = false;
+    }
+  }
+
+  // ── SCRAPER: Download ZIP ──────────────────────────────────
+
+  async function downloadSelected() {
+    if (selectedUrls.size === 0) return;
+    const btn = document.getElementById("downloadBtn");
+    btn.disabled = true;
+    setStatus(`Preparing ZIP with ${selectedUrls.size} photos...`, "loading");
+
+    try {
+      const res = await fetch("/api/download", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ urls: Array.from(selectedUrls) }),
+      });
+      if (!res.ok) throw new Error("Server error: " + res.status);
+      const blob = await res.blob();
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement("a");
+      a.href = url; a.download = "starbucks-photos.zip";
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+      setStatus(`Downloaded ${selectedUrls.size} photos as ZIP.`);
+    } catch (err) {
+      setStatus("Download failed: " + err.message, "error");
+    } finally {
+      btn.disabled = selectedUrls.size === 0;
+    }
+  }
+
+  // ── SCRAPER: Render grid ───────────────────────────────────
+
+  function showGridControls(show) {
+    document.getElementById("selectAllBtn").style.display = show ? "inline-block" : "none";
+    document.getElementById("clearBtn").style.display     = show ? "inline-block" : "none";
+  }
+
+  function renderGrid(images) {
+    const grid = document.getElementById("grid");
+
+    if (!images || images.length === 0) {
+      grid.innerHTML = `<div class="empty-state"><h2>No photos yet</h2><p>Click "Scan for Photos" to scrape the latest high-res photos from about.starbucks.com.</p></div>`;
+      return;
+    }
+
+    selectedUrls.size > 0
+      ? grid.classList.add("has-selection")
+      : grid.classList.remove("has-selection");
+
+    const col1 = images.filter((_, i) => i % 4 === 0);
+    const col2 = images.filter((_, i) => i % 4 === 1);
+    const col3 = images.filter((_, i) => i % 4 === 2);
+    const col4 = images.filter((_, i) => i % 4 === 3);
+
+    grid.innerHTML = `
+      <div class="masonry-col">${col1.map(scraperCard).join("")}</div>
+      <div class="masonry-col">${col2.map(scraperCard).join("")}</div>
+      <div class="masonry-col">${col3.map(scraperCard).join("")}</div>
+      <div class="masonry-col">${col4.map(scraperCard).join("")}</div>
+    `;
+  }
+
+  function scraperCard(img) {
+    const sel = selectedUrls.has(img.url);
+    return `
+      <div class="card ${sel ? "selected" : ""}" onclick="toggleSelect('${esc(img.url)}')">
+        <div class="card-img-wrap">
+          <img src="${esc(img.url)}" alt="${esc(img.figmaLabel || img.title)}" loading="lazy" onerror="this.style.opacity='0.2'"/>
+          <div class="card-check">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+              <path d="M2 5l2.5 2.5L8 3" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+        </div>
+        <div class="card-info">
+          <div class="card-title">${escHtml(img.figmaLabel || img.title)}</div>
+          <div class="card-meta">${img.width} × ${img.height}px</div>
+        </div>
+      </div>`;
+  }
+
+  // ── LIBRARY: Load (reads the live, published GitHub file) ──
+
+  async function loadLibrary() {
+    setLibStatus("Loading published library...", "loading");
+    try {
+      // Cache-bust — raw.githubusercontent.com caches responses briefly,
+      // and we want this tab to reflect the true current state.
+      const res  = await fetch(PUBLISHED_DATA_URL + "?t=" + Date.now());
+      if (!res.ok) throw new Error("GitHub fetch failed: " + res.status);
+      const data = await res.json();
+      libraryImages = data;
+      libSelectedUrls.clear();
+      updateLibSelectionUI();
+      renderLibGrid();
+      updateLibraryBadgeFromData(data);
+    } catch (err) {
+      setLibStatus("Could not load published library: " + err.message, "error");
+    }
+  }
+
+  function updateLibraryBadge() {
+    fetch(PUBLISHED_DATA_URL + "?t=" + Date.now())
+      .then(r => r.json())
+      .then(updateLibraryBadgeFromData)
+      .catch(() => {});
+  }
+
+  function updateLibraryBadgeFromData(data) {
+    document.getElementById("libraryBadge").textContent = data.length;
+  }
+
+  // ── LIBRARY: Selection ─────────────────────────────────────
+
+  function libToggleSelect(url) {
+    libSelectedUrls.has(url) ? libSelectedUrls.delete(url) : libSelectedUrls.add(url);
+    updateLibSelectionUI();
+    renderLibGrid();
+  }
+
+  function libSelectAll() {
+    const allSelected = libraryImages.length > 0 && libSelectedUrls.size === libraryImages.length;
+    if (allSelected) {
+      libSelectedUrls.clear();
+    } else {
+      libraryImages.forEach((img) => libSelectedUrls.add(img.url));
+    }
+    updateLibSelectionUI();
+    renderLibGrid();
+  }
+
+  function libClearSelection() {
+    libSelectedUrls.clear();
+    updateLibSelectionUI();
+    renderLibGrid();
+  }
+
+  function updateLibSelectionUI() {
+    const count = libSelectedUrls.size;
+    document.getElementById("libSelectionCount").textContent = count > 0 ? `${count} selected` : "";
+    document.getElementById("removeSelectedBtn").disabled = count === 0;
+    const allSelected = libraryImages.length > 0 && count === libraryImages.length;
+    document.getElementById("libSelectAllBtn").textContent = allSelected ? "Deselect All" : "Select All";
+  }
+
+  // ── LIBRARY: Remove selected (republishes the remaining set) ─
+
+  async function removeSelected() {
+    if (libSelectedUrls.size === 0) return;
+
+    const count = libSelectedUrls.size;
+    const remaining = libraryImages.filter((img) => !libSelectedUrls.has(img.url));
+
+    if (remaining.length === 0) {
+      setLibStatus("Can't remove every photo from here — the publish endpoint requires at least one photo. Edit data/images.json directly on GitHub if you really want an empty library.", "error");
+      return;
+    }
+
+    const confirmed = confirm(`Remove ${count} photo${count > 1 ? "s" : ""} from the published library? This republishes the remaining ${remaining.length} photo${remaining.length === 1 ? "" : "s"} to GitHub.`);
+    if (!confirmed) return;
+
+    setLibStatus(`Removing ${count} photo${count > 1 ? "s" : ""} and republishing...`, "loading");
+
+    try {
+      const res = await fetch("/api/publish", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ urls: remaining.map((img) => img.url) }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Remove failed");
+
+      setLibStatus(`✓ Removed ${count} photo${count > 1 ? "s" : ""}. <a href="${data.commitUrl}" target="_blank" rel="noopener">View commit</a>`, "success");
+      await loadLibrary(); // refresh from GitHub
+    } catch (err) {
+      setLibStatus("Remove failed: " + err.message, "error");
+    }
+  }
+
+  // ── LIBRARY: Render grid ───────────────────────────────────
+
+  function renderLibGrid() {
+    const grid = document.getElementById("libGrid");
+
+    if (!libraryImages || libraryImages.length === 0) {
+      grid.innerHTML = `<div class="empty-state"><h2>Library is empty</h2><p>Go to the Scraper tab, select photos, and click "Publish Selected to Library".</p></div>`;
+      setLibStatus("No photos published yet.");
+      return;
+    }
+
+    setLibStatus(`${libraryImages.length} photo${libraryImages.length !== 1 ? "s" : ""} currently published and live for the Figma plugin. Select any to remove them.`);
+
+    libSelectedUrls.size > 0
+      ? grid.classList.add("has-selection")
+      : grid.classList.remove("has-selection");
+
+    const col1 = libraryImages.filter((_, i) => i % 4 === 0);
+    const col2 = libraryImages.filter((_, i) => i % 4 === 1);
+    const col3 = libraryImages.filter((_, i) => i % 4 === 2);
+    const col4 = libraryImages.filter((_, i) => i % 4 === 3);
+
+    grid.innerHTML = `
+      <div class="masonry-col">${col1.map(libCard).join("")}</div>
+      <div class="masonry-col">${col2.map(libCard).join("")}</div>
+      <div class="masonry-col">${col3.map(libCard).join("")}</div>
+      <div class="masonry-col">${col4.map(libCard).join("")}</div>
+    `;
+  }
+
+  function libCard(img) {
+    const sel = libSelectedUrls.has(img.url);
+    const label = img.figmaLabel || img.title || img.url;
+    return `
+      <div class="card lib-card ${sel ? "selected" : ""}" onclick="libToggleSelect('${esc(img.url)}')">
+        <div class="card-img-wrap">
+          <img src="${esc(img.url)}" alt="${esc(label)}" loading="lazy" onerror="this.style.opacity='0.2'"/>
+          <div class="card-remove">✕</div>
+        </div>
+        <div class="card-info">
+          <div class="card-title">${escHtml(label)}</div>
+        </div>
+      </div>`;
+  }
+
+  // ── Shared utils ───────────────────────────────────────────
+
+  function escHtml(str) {
+    return String(str).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  }
+  function esc(str) {
+    return String(str).replace(/'/g,"\\'").replace(/"/g,"&quot;");
+  }
+
+  // ── Init ───────────────────────────────────────────────────
   loadImages();
+  updateLibraryBadge();
 </script>
 </body>
 </html>
