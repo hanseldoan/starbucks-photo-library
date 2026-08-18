@@ -22,32 +22,14 @@
     overflow: hidden;
   }
 
-  /* Top toolbar: help icon + search, side by side */
-  .toolbar {
+  /* Top toolbar: search only, full width (help icon moved out of this row) */
+  .top-toolbar {
     display: flex;
     align-items: center;
     gap: 16px;
-    padding: 16px;
+    padding: 16px 16px 8px;
     flex-shrink: 0;
   }
-
-  .help-btn {
-    flex-shrink: 0;
-    width: 32px;
-    height: 32px;
-    border-radius: var(--radius);
-    border: none;
-    background: transparent;
-    color: var(--figma-color-icon, #000000e5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: background 0.15s, color 0.15s;
-  }
-
-  .help-btn:hover { background: var(--figma-color-bg-hover, #f5f5f5); }
-  .help-btn.active { color: var(--figma-color-icon-brand, #007be5); }
 
   .search-wrap {
     position: relative;
@@ -101,6 +83,89 @@
 
   .clear-btn:hover { color: var(--figma-color-icon, #000000e5); }
   .clear-btn[hidden] { display: none; }
+
+  /* Second toolbar row: sort control (left) + help icon (right).
+     New row — the help icon used to live in the top toolbar next to
+     search; it now lives here instead, same click behavior. */
+  .sort-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 4px 16px 8px;
+    flex-shrink: 0;
+  }
+
+  .sort-btn {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    height: 24px;
+    padding: 0 4px 0 0;
+    border: none;
+    border-radius: var(--radius);
+    background: transparent;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .sort-btn:hover { background: var(--figma-color-bg-hover, #f5f5f5); }
+
+  .sort-icon {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--figma-color-icon-secondary, #0000007f);
+    /* Rotates 180° each time sort order flips — a small confirming
+       motion so the toggle reads as "reversed," not just relabeled. */
+    transition: transform 0.25s ease;
+  }
+
+  .sort-label {
+    flex: 1;
+    min-width: 0;
+    text-align: left;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.055px;
+    line-height: 16px;
+    color: var(--figma-color-text-secondary, #0000007f);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Help button — now a circular icon pill instead of a plain square
+     icon button, so it reads clearly even sitting next to the sort
+     label instead of next to the search field. Same toggle behavior
+     as before: tap to open/close the help text below. */
+  .help-btn {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 1px solid transparent;
+    background: var(--figma-color-bg-secondary, #f5f5f5);
+    color: var(--figma-color-icon, #000000e5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+  }
+
+  .help-btn:hover:not(.active) { background: var(--figma-color-bg-hover, #ececec); }
+
+  .help-btn.active {
+    background: var(--figma-color-bg-selected, #e5f4ff);
+    border-color: var(--figma-color-border-selected, #0d99ff);
+    color: var(--figma-color-icon-brand, #0d99ff);
+  }
 
   /* Help text — hidden until the help icon is tapped */
   .help-panel {
@@ -297,14 +362,7 @@
 </head>
 <body>
 
-<div class="toolbar">
-  <button class="help-btn" id="helpBtn" aria-label="Help" title="Help">
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-      <circle cx="10" cy="10" r="8.5" stroke="currentColor" stroke-width="1.3"/>
-      <path d="M7.6 7.6c.2-1 1.1-1.7 2.2-1.7 1.2 0 2.2.8 2.2 1.9 0 .9-.5 1.3-1.3 1.8-.6.4-.9.7-.9 1.3v.3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
-      <circle cx="10" cy="13.9" r="0.9" fill="currentColor"/>
-    </svg>
-  </button>
+<div class="top-toolbar">
   <div class="search-wrap">
     <svg class="search-icon" width="14" height="14" viewBox="0 0 14 14" fill="none">
       <circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.5"/>
@@ -317,6 +375,33 @@
       </svg>
     </button>
   </div>
+</div>
+
+<div class="sort-toolbar">
+  <button class="sort-btn" id="sortBtn" type="button" aria-label="Sort: Newest to Oldest. Click to switch to Oldest to Newest." title="Sort: Newest to Oldest">
+    <span class="sort-icon" id="sortIcon">
+      <!-- Swap/reorder glyph. Figma's exact "icon.24.swap.small" vector
+           couldn't be exported in this environment (Figma's asset host
+           blocks the fetch here), so this is a hand-coded equivalent —
+           same two-arrow loop shape, same stroke style as the rest of
+           this file's icons. Swap in the exact exported SVG later if
+           pixel-parity with the kit matters. -->
+      <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="19.17 3.33 19.17 8.33 14.17 8.33"/>
+        <polyline points="0.83 16.67 0.83 11.67 5.83 11.67"/>
+        <path d="M2.93 7.5a7.5 7.5 0 0 1 12.38-2.8L19.17 8.33"/>
+        <path d="M0.83 11.67l3.87 3.63A7.5 7.5 0 0 0 17.08 12.5"/>
+      </svg>
+    </span>
+    <span class="sort-label" id="sortLabel">Newest to Oldest</span>
+  </button>
+  <button class="help-btn" id="helpBtn" aria-label="Help" title="Help">
+    <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
+      <circle cx="10" cy="10" r="8.5" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M7.6 7.6c.2-1 1.1-1.7 2.2-1.7 1.2 0 2.2.8 2.2 1.9 0 .9-.5 1.3-1.3 1.8-.6.4-.9.7-.9 1.3v.3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+      <circle cx="10" cy="13.9" r="0.9" fill="currentColor"/>
+    </svg>
+  </button>
 </div>
 
 <div class="help-panel" id="helpPanel">
@@ -347,6 +432,17 @@ let IMAGES = [];
 let selectedUrl = null;
 let filtered = [];
 
+// Sort state — 'desc' = Newest to Oldest (default, matches the design),
+// 'asc' = Oldest to Newest. Toggled by clicking the swap icon/button;
+// search and sort are independent, so switching one never resets the other.
+let sortDir = 'desc';
+let sortIconRotation = 0;
+
+const SORT_LABELS = {
+  desc: 'Newest to Oldest',
+  asc: 'Oldest to Newest',
+};
+
 window.onmessage = (event) => {
   const msg = event.data.pluginMessage;
   if (!msg) return;
@@ -356,8 +452,7 @@ window.onmessage = (event) => {
     filtered = [...IMAGES];
     document.getElementById('helpCount').textContent = `${IMAGES.length} Photo${IMAGES.length !== 1 ? 's' : ''}`;
     document.getElementById('helpUpdated').textContent = msg.lastUpdated || '';
-    renderGrid(filtered);
-    updateStatus();
+    render();
   }
   if (msg.type === 'insert-done') {
     document.getElementById('overlay').classList.remove('active');
@@ -371,6 +466,49 @@ window.onmessage = (event) => {
 document.getElementById('helpBtn').addEventListener('click', () => {
   document.getElementById('helpPanel').classList.toggle('open');
   document.getElementById('helpBtn').classList.toggle('active');
+});
+
+// Returns `items` sorted by photo timestamp according to the current
+// sortDir. Photos with no timestamp (shouldn't normally happen, but the
+// scraper data is external input) sort to the end either way rather than
+// jumping to the top.
+function sortImages(items) {
+  return [...items].sort((a, b) => {
+    const ta = a.timestamp ? new Date(a.timestamp).getTime() : NaN;
+    const tb = b.timestamp ? new Date(b.timestamp).getTime() : NaN;
+    const aMissing = Number.isNaN(ta);
+    const bMissing = Number.isNaN(tb);
+    if (aMissing && bMissing) return 0;
+    if (aMissing) return 1;
+    if (bMissing) return -1;
+    return sortDir === 'desc' ? tb - ta : ta - tb;
+  });
+}
+
+// Single place that re-renders the grid + status line + sort label from
+// current state (filtered list + sortDir + selectedUrl). Called after
+// search, after sort toggle, and after selecting/deselecting a photo.
+function render() {
+  renderGrid(sortImages(filtered));
+  updateStatus();
+}
+
+document.getElementById('sortBtn').addEventListener('click', () => {
+  sortDir = sortDir === 'desc' ? 'asc' : 'desc';
+
+  const label = document.getElementById('sortLabel');
+  label.textContent = SORT_LABELS[sortDir];
+
+  const sortBtn = document.getElementById('sortBtn');
+  sortBtn.setAttribute('aria-label', `Sort: ${SORT_LABELS[sortDir]}. Click to switch to ${SORT_LABELS[sortDir === 'desc' ? 'asc' : 'desc']}.`);
+  sortBtn.setAttribute('title', `Sort: ${SORT_LABELS[sortDir]}`);
+
+  // Rotate the icon another 180° each click (never snapping back) so the
+  // toggle reads as a reversal rather than just a text swap.
+  sortIconRotation += 180;
+  document.getElementById('sortIcon').style.transform = `rotate(${sortIconRotation}deg)`;
+
+  render();
 });
 
 function makeCard(img) {
@@ -423,8 +561,7 @@ function updateStatus() {
 function selectImage(url) {
   selectedUrl = selectedUrl === url ? null : url;
   document.getElementById('insertBtn').disabled = !selectedUrl;
-  renderGrid(filtered);
-  updateStatus();
+  render();
 }
 
 function insertSelected() {
@@ -495,8 +632,7 @@ function applySearch(q) {
     selectedUrl = null;
     document.getElementById('insertBtn').disabled = true;
   }
-  renderGrid(filtered);
-  updateStatus();
+  render();
 }
 
 searchInput.addEventListener('input', (e) => {

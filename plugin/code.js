@@ -27,11 +27,13 @@ async function loadImages() {
     if (!res.ok) throw new Error(`GitHub fetch failed: ${res.status}`);
     const records = await res.json();
 
-    // data/images.json records use {url, figmaLabel, ...}; the plugin UI
-    // just needs {url, label}.
+    // data/images.json records use {url, figmaLabel, timestamp, ...}; the
+    // plugin UI needs {url, label, timestamp} — timestamp drives the
+    // Newest/Oldest sort toggle in the toolbar.
     const images = records.map((r) => ({
       url: r.url,
       label: r.figmaLabel || r.title || r.url,
+      timestamp: r.timestamp || null,
     }));
 
     const lastUpdated = records.length
