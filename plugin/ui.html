@@ -567,60 +567,13 @@ function selectImage(url) {
 function insertSelected() {
   if (!selectedUrl) return;
   document.getElementById('overlay').classList.add('active');
-
-  const img = new Image();
-  img.crossOrigin = "anonymous";
-
-  img.onload = () => {
-    try {
-      const canvas = document.createElement('canvas');
-      canvas.width = img.naturalWidth;
-      canvas.height = img.naturalHeight;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0);
-
-      canvas.toBlob((blob) => {
-        if (!blob) {
-          document.getElementById('overlay').classList.remove('active');
-          alert('Could not read photo pixels.');
-          return;
-        }
-        const reader = new FileReader();
-        reader.onload = () => {
-          const bytes = Array.from(new Uint8Array(reader.result));
-          parent.postMessage({ pluginMessage: {
-            type: 'insert-image',
-            bytes,
-            width: img.naturalWidth,
-            height: img.naturalHeight
-          }}, '*');
-        };
-        reader.readAsArrayBuffer(blob);
-      }, 'image/png');
-    } catch (e) {
-      document.getElementById('overlay').classList.remove('active');
-      alert('Canvas error: ' + e.message);
-    }
-  };
-
-  img.onerror = () => {
-    fetch(selectedUrl)
-      .then(r => r.blob())
-      .then(blob => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          const bytes = Array.from(new Uint8Array(reader.result));
-          parent.postMessage({ pluginMessage: { type: 'insert-image', bytes } }, '*');
-        };
-        reader.readAsArrayBuffer(blob);
-      })
-      .catch(err => {
-        document.getElementById('overlay').classList.remove('active');
-        alert('Could not load photo: ' + err.message);
-      });
-  };
-
-  img.src = selectedUrl;
+  const selected = IMAGES.find((i) => i.url === selectedUrl);
+  parent.postMessage({ pluginMessage: {
+    type: 'insert-image-url',
+    url: selectedUrl,
+    width: selected?.width || null,
+    height: selected?.height || null,
+  } }, '*');
 }
 
 const searchInput = document.getElementById('search');

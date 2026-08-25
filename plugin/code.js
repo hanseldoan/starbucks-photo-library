@@ -1162,36 +1162,78 @@ async function loadImages() {
   figma.showUI(__html__, { width: 400, height: 600, title: "Starbucks Photos", themeColors: true });
   figma.ui.postMessage({ type: "init", images, lastUpdated, source });
 
+  async function applyImageHash(imageHash, width, height) {
+    const fill = { type: "IMAGE", scaleMode: "FILL", imageHash };
+    const selection = figma.currentPage.selection;
+
+    if (selection.length > 0) {
+      for (const node of selection) {
+        if ("fills" in node) node.fills = [fill];
+      }
+      figma.notify("Photo applied to selection ✓");
+      return;
+    }
+
+    const rect = figma.createRectangle();
+    const defaultW = 1200;
+    const defaultH = 800;
+    const safeW = Number(width) > 0 ? Number(width) : defaultW;
+    const safeH = Number(height) > 0 ? Number(height) : defaultH;
+    const maxW = 2048;
+    const scale = safeW > maxW ? maxW / safeW : 1;
+    rect.resize(Math.round(safeW * scale), Math.round(safeH * scale));
+    rect.x = figma.viewport.center.x - rect.width / 2;
+    rect.y = figma.viewport.center.y - rect.height / 2;
+    rect.fills = [fill];
+    figma.currentPage.appendChild(rect);
+    figma.currentPage.selection = [rect];
+    figma.viewport.scrollAndZoomIntoView([rect]);
+    figma.notify("Photo placed on canvas ✓");
+  }
+
+  async function applyImageBytes(bytes, width, height) {
+    if (!bytes || bytes.length === 0) throw new Error("No image data received");
+    const imageHash = figma.createImage(new Uint8Array(bytes)).hash;
+    await applyImageHash(imageHash, width, height);
+  }
+
   figma.ui.onmessage = async (msg) => {
     if (msg.type === "insert-image") {
       const { bytes, width, height } = msg;
 
       try {
-        if (!bytes || bytes.length === 0) throw new Error("No image data received");
+        await applyImageBytes(bytes, width, height);
+        figma.ui.postMessage({ type: "insert-done" });
+      } catch (e) {
+        console.error("Insert error:", e.message);
+        figma.ui.postMessage({ type: "insert-error", message: e.message });
+      }
+    }
 
-        const imageHash = figma.createImage(new Uint8Array(bytes)).hash;
-        const fill = { type: "IMAGE", scaleMode: "FILL", imageHash };
-        const selection = figma.currentPage.selection;
+    if (msg.type === "insert-image-url") {
+      const { url, width, height } = msg;
 
-        if (selection.length > 0) {
-          for (const node of selection) {
-            if ("fills" in node) node.fills = [fill];
+      try {
+        if (!url) throw new Error("No image URL received");
+
+        // Prefer Figma-native URL import when available; this path is more
+        // reliable in plugin runtimes where fetch() is blocked.
+        if (typeof figma.createImageAsync === "function") {
+          try {
+            const image = await figma.createImageAsync(url);
+            await applyImageHash(image.hash, width, height);
+            figma.ui.postMessage({ type: "insert-done" });
+            return;
+          } catch (nativeErr) {
+            console.warn("createImageAsync failed, falling back to fetch:", nativeErr.message);
           }
-          figma.notify("Photo applied to selection ✓");
-        } else {
-          const rect = figma.createRectangle();
-          const maxW = 2048;
-          const scale = width > maxW ? maxW / width : 1;
-          rect.resize(Math.round(width * scale), Math.round(height * scale));
-          rect.x = figma.viewport.center.x - rect.width / 2;
-          rect.y = figma.viewport.center.y - rect.height / 2;
-          rect.fills = [fill];
-          figma.currentPage.appendChild(rect);
-          figma.currentPage.selection = [rect];
-          figma.viewport.scrollAndZoomIntoView([rect]);
-          figma.notify("Photo placed on canvas ✓");
         }
 
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`Image fetch failed: ${res.status}`);
+        const bytes = Array.from(new Uint8Array(await res.arrayBuffer()));
+
+        await applyImageBytes(bytes, width, height);
         figma.ui.postMessage({ type: "insert-done" });
       } catch (e) {
         console.error("Insert error:", e.message);
