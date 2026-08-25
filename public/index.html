@@ -155,6 +155,45 @@
     .status-bar.success { color: var(--success); font-weight: 600; }
     .status-bar a { color: inherit; }
 
+    .error-banner {
+      display: none;
+      margin: 12px 32px 0;
+      padding: 10px 12px;
+      border: 1px solid #f1b0a7;
+      border-radius: var(--radius);
+      background: #fff4f2;
+      color: #8a1f12;
+      font-size: 12px;
+      line-height: 1.5;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .error-banner.visible { display: flex; }
+
+    .error-banner-text {
+      width: 100%;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+
+    .error-banner-btn {
+      padding: 6px 10px;
+      border: 1px solid #d8a198;
+      border-radius: var(--radius);
+      background: #ffffff;
+      color: #8a1f12;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      align-self: flex-start;
+      white-space: nowrap;
+    }
+
+    .error-banner-btn:hover { background: #fff7f5; }
+    .error-banner-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
     .spinner {
       width: 12px; height: 12px;
       border: 2px solid rgba(13,153,255,0.2);
@@ -267,6 +306,7 @@
 
     @media (max-width: 600px) {
       .header, .toolbar, .grid-wrap, .status-bar { padding-left: 16px; padding-right: 16px; }
+      .error-banner { margin-left: 16px; margin-right: 16px; }
     }
   </style>
 </head>
@@ -277,7 +317,7 @@
   <div class="header-top">
     <div>
       <div class="header-title">Starbucks Photo Library</div>
-      <div class="header-sub">about.starbucks.com — high-res photos, published to GitHub for the Figma plugin</div>
+      <div class="header-sub">about.starbucks.com — high-res photos, synced locally to your Figma plugin</div>
     </div>
   </div>
   <div class="tabs">
@@ -296,7 +336,8 @@
   <div class="toolbar">
     <button class="btn btn-primary" id="scanBtn" onclick="startScan()">Scan for Photos</button>
     <button class="btn btn-secondary" id="downloadBtn" onclick="downloadSelected()" disabled>Download Selected</button>
-    <button class="btn btn-publish" id="publishBtn" onclick="publishSelected()">Publish Selected to Library</button>
+    <button class="btn btn-publish" id="publishBtn" onclick="publishSelected()">Sync Selected to Plugin</button>
+    <button class="btn btn-ghost" id="sortBtn" onclick="toggleSort()" title="Sort order">↓ Newest First</button>
     <button class="btn btn-ghost" id="selectAllBtn" onclick="selectAll()" style="display:none">Select All</button>
     <button class="btn btn-ghost" id="clearBtn" onclick="clearSelection()" style="display:none">Clear Selection</button>
     <span class="selection-count" id="selectionCount"></span>
@@ -306,6 +347,11 @@
     Ready — click "Scan for Photos" to fetch the latest photos from about.starbucks.com.
   </div>
 
+  <div class="error-banner" id="scanErrorBanner">
+    <span class="error-banner-text" id="scanErrorText"></span>
+    <button class="error-banner-btn" id="scanRetryBtn" onclick="retryScan()">Retry Scan</button>
+  </div>
+
   <div class="grid-wrap">
     <div class="grid" id="grid"></div>
   </div>
@@ -313,20 +359,20 @@
 </div>
 
 <!-- ══════════════════════════════════════════════════════════ -->
-<!-- LIBRARY PANEL — mirrors what's currently published on      -->
-<!-- GitHub (the same data/images.json the Figma plugin fetches) -->
+<!-- LIBRARY PANEL — mirrors local data/images.json and plugin snapshot -->
 <!-- ══════════════════════════════════════════════════════════ -->
 <div id="panel-library" class="panel">
 
   <div class="toolbar">
-    <button class="btn btn-danger" id="removeSelectedBtn" onclick="removeSelected()" disabled>Remove Selected &amp; Republish</button>
+    <button class="btn btn-danger" id="removeSelectedBtn" onclick="removeSelected()" disabled>Remove Selected &amp; Re-sync</button>
+    <button class="btn btn-ghost" id="libSortBtn" onclick="toggleLibSort()" title="Sort order">↓ Newest First</button>
     <button class="btn btn-ghost" id="libSelectAllBtn" onclick="libSelectAll()">Select All</button>
     <button class="btn btn-ghost" id="libClearBtn" onclick="libClearSelection()">Clear Selection</button>
     <span class="selection-count" id="libSelectionCount"></span>
   </div>
 
   <div class="status-bar" id="libStatusBar">
-    Photos currently published and live for the Figma plugin.
+    Photos currently synced and live for your local Figma plugin.
   </div>
 
   <div class="grid-wrap">
@@ -339,39 +385,20 @@
   // ── State ──────────────────────────────────────────────────
   let allImages     = [];   // scraper results (local data/images.json via /api/images)
   let selectedUrls  = new Set();
+  let sortOrder     = 'newest'; // 'newest' or 'oldest'
 
-  let libraryImages   = [];  // images currently live on GitHub (what the plugin fetches)
+  let libraryImages   = [];  // images currently live in local plugin snapshot
   let libSelectedUrls = new Set();
   let libBusy         = false; // re-entry guard for remove/republish
+  let libSortOrder    = 'newest'; // 'newest' or 'oldest'
+  let activeScanStart = null;
+  const RETRY_COOLDOWN_SECONDS = 10;
+  let retryCooldownRemaining = 0;
+  let retryCooldownTimer = null;
 
-  // Same URL the Figma plugin itself fetches at load time — this tab is a
-  // read/manage view onto that exact live file, not a separate database.
-  const PUBLISHED_DATA_URL =
-    "https://raw.githubusercontent.com/hanseldoan/starbucks-photo-library/main/data/images.json";
-
-  // raw.githubusercontent.com sits behind a CDN (Fastly) that can keep
-  // serving a stale response for MINUTES after a commit, even with a
-  // cache-busting query string — confirmed directly: right after publishing
-  // a 214-photo commit, this URL kept returning 211 for several minutes
-  // while the GitHub API below reflected the new commit immediately. That
-  // staleness was the actual cause of "Remove & Republish doesn't work" —
-  // the Library tab would reload after a successful remove and still show
-  // the pre-removal list, making it look like nothing happened (and letting
-  // you re-select and re-submit photos that were already gone). The GitHub
-  // Contents API is not behind that CDN and reflects `main` immediately, so
-  // the admin UI (this file) reads from it for anything that needs to be
-  // accurate right after a write. The Figma plugin itself still reads
-  // PUBLISHED_DATA_URL above — that's a separate, lower-stakes read path
-  // and not worth the extra API calls/rate limit.
-  const PUBLISHED_API_URL =
-    "https://api.github.com/repos/hanseldoan/starbucks-photo-library/contents/data/images.json?ref=main";
-
-  async function fetchPublishedFresh() {
-    const res = await fetch(PUBLISHED_API_URL, {
-      headers: { Accept: "application/vnd.github.raw+json" },
-      cache: "no-store",
-    });
-    if (!res.ok) throw new Error("GitHub API fetch failed: " + res.status);
+  async function fetchLibraryFresh() {
+    const res = await fetch("/api/images", { cache: "no-store" });
+    if (!res.ok) throw new Error("Local library fetch failed: " + res.status);
     return res.json();
   }
 
@@ -404,6 +431,61 @@
       : message;
   }
 
+  function hideScanErrorBanner() {
+    const banner = document.getElementById("scanErrorBanner");
+    const text = document.getElementById("scanErrorText");
+    banner.classList.remove("visible");
+    text.textContent = "";
+    updateRetryButtonState();
+  }
+
+  function updateRetryButtonState() {
+    const retryBtn = document.getElementById("scanRetryBtn");
+    if (retryCooldownRemaining > 0) {
+      retryBtn.disabled = true;
+      retryBtn.textContent = `Retry Scan (${retryCooldownRemaining}s)`;
+    } else {
+      retryBtn.disabled = false;
+      retryBtn.textContent = "Retry Scan";
+    }
+  }
+
+  function startRetryCooldown() {
+    if (retryCooldownTimer) {
+      clearInterval(retryCooldownTimer);
+      retryCooldownTimer = null;
+    }
+
+    retryCooldownRemaining = RETRY_COOLDOWN_SECONDS;
+    updateRetryButtonState();
+
+    retryCooldownTimer = setInterval(() => {
+      retryCooldownRemaining -= 1;
+      if (retryCooldownRemaining <= 0) {
+        retryCooldownRemaining = 0;
+        clearInterval(retryCooldownTimer);
+        retryCooldownTimer = null;
+      }
+      updateRetryButtonState();
+    }, 1000);
+  }
+
+  function showScanErrorBanner(message) {
+    const banner = document.getElementById("scanErrorBanner");
+    const text = document.getElementById("scanErrorText");
+    text.textContent = message;
+    updateRetryButtonState();
+    banner.classList.add("visible");
+  }
+
+  function retryScan() {
+    const scanBtn = document.getElementById("scanBtn");
+    if (scanBtn.disabled || retryCooldownRemaining > 0) return;
+
+    startRetryCooldown();
+    startScan();
+  }
+
   // ── SCRAPER: Load saved images ─────────────────────────────
 
   async function loadImages() {
@@ -428,33 +510,65 @@
   async function startScan() {
     const btn = document.getElementById("scanBtn");
     btn.disabled = true;
+    hideScanErrorBanner();
     setStatus("Scan started — this runs in the background and can take a few minutes.", "loading");
 
     try {
-      await fetch("/api/scrape", { method: "POST" });
+      const res = await fetch("/api/scrape", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Could not start scan");
+
+      activeScanStart = data.startedAt || null;
       setStatus("Scan in progress — waiting for results...", "loading");
-      pollForResults();
+      pollForResults(activeScanStart);
     } catch (err) {
-      setStatus("Failed to start scan: " + err.message, "error");
+      setStatus("Scan failed. See details below.", "error");
+      showScanErrorBanner("Scan did not start. " + err.message);
       btn.disabled = false;
     }
   }
 
   let pollInterval = null;
 
-  function pollForResults() {
+  async function fetchScrapeStatus() {
+    const res = await fetch("/api/scrape-status", { cache: "no-store" });
+    if (!res.ok) throw new Error("Could not read scrape status");
+    return res.json();
+  }
+
+  function pollForResults(startedAt) {
     if (pollInterval) clearInterval(pollInterval);
     const previousCount = allImages.length;
+    const startedAtMs = startedAt ? Date.parse(startedAt) : Date.now();
 
     pollInterval = setInterval(async () => {
       try {
-        const res    = await fetch("/api/images");
-        const images = await res.json();
-        if (images.length !== previousCount) {
+        const [imagesRes, status] = await Promise.all([
+          fetch("/api/images", { cache: "no-store" }),
+          fetchScrapeStatus(),
+        ]);
+        const images = await imagesRes.json();
+
+        if (!status.isRunning && status.startedAt && Date.parse(status.startedAt) >= startedAtMs) {
           clearInterval(pollInterval);
           allImages = images;
           renderGrid(images);
-          setStatus(`Scan complete — ${images.length} photos in database.`);
+
+          if (status.lastError) {
+            setStatus("Scan failed. See details below.", "error");
+            showScanErrorBanner(
+              "Scan stopped because the source site blocked automated access. Try again later, or run from a different network/VPN. Details: " + status.lastError
+            );
+          } else if (status.lastWarning) {
+            setStatus("Scan finished with warnings. See details below.", "error");
+            showScanErrorBanner(status.lastWarning);
+          } else if (images.length === previousCount) {
+            setStatus(`Scan complete — no new photos found. ${images.length} photos in database.`);
+          } else {
+            setStatus(`Scan complete — ${images.length} photos in database.`);
+            hideScanErrorBanner();
+          }
+
           showGridControls(true);
           document.getElementById("scanBtn").disabled = false;
         }
@@ -464,7 +578,8 @@
     setTimeout(() => {
       clearInterval(pollInterval);
       document.getElementById("scanBtn").disabled = false;
-      setStatus("Scan may still be running. Refresh the page to see results.");
+      setStatus("Scan may still be running. Please wait a bit longer.");
+      showScanErrorBanner("Scan is taking longer than expected. Check terminal logs for live progress.");
     }, 10 * 60 * 1000);
   }
 
@@ -503,14 +618,14 @@
     document.getElementById("selectAllBtn").textContent = allSelected ? "Deselect All" : "Select All";
   }
 
-  // ── SCRAPER: Publish to library (GitHub) ───────────────────
+  // ── SCRAPER: Sync selected to local plugin library ─────────
 
   async function publishSelected() {
     if (selectedUrls.size === 0) return;
 
     const publishBtn = document.getElementById("publishBtn");
     publishBtn.disabled = true;
-    setStatus(`Publishing ${selectedUrls.size} photo${selectedUrls.size === 1 ? "" : "s"} to the library...`, "loading");
+    setStatus(`Syncing ${selectedUrls.size} photo${selectedUrls.size === 1 ? "" : "s"} to the local plugin library...`, "loading");
 
     try {
       const res = await fetch("/api/publish", {
@@ -521,10 +636,10 @@
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Publish failed");
 
-      setStatus(`✓ Published ${data.published} photo${data.published === 1 ? "" : "s"}. <a href="${data.commitUrl}" target="_blank" rel="noopener">View commit</a>`, "success");
+      setStatus(`✓ Synced ${data.published} photo${data.published === 1 ? "" : "s"} to local plugin data.`, "success");
       updateLibraryBadge();
     } catch (err) {
-      setStatus("Publish failed: " + err.message, "error");
+      setStatus("Sync failed: " + err.message, "error");
     } finally {
       publishBtn.disabled = false;
     }
@@ -559,7 +674,26 @@
     }
   }
 
-  // ── SCRAPER: Render grid ───────────────────────────────────
+  // ── SCRAPER: Sort & Render ────────────────────────────────
+
+  function toggleSort() {
+    sortOrder = sortOrder === 'newest' ? 'oldest' : 'newest';
+    updateSortButton();
+    renderGrid(allImages);
+  }
+
+  function updateSortButton() {
+    const btn = document.getElementById("sortBtn");
+    btn.textContent = sortOrder === 'newest' ? '↓ Newest First' : '↑ Oldest First';
+  }
+
+  function getSortedImages(images, order) {
+    return [...images].sort((a, b) => {
+      const timeA = new Date(a.timestamp || 0).getTime();
+      const timeB = new Date(b.timestamp || 0).getTime();
+      return order === 'newest' ? timeB - timeA : timeA - timeB;
+    });
+  }
 
   function showGridControls(show) {
     document.getElementById("selectAllBtn").style.display = show ? "inline-block" : "none";
@@ -578,10 +712,11 @@
       ? grid.classList.add("has-selection")
       : grid.classList.remove("has-selection");
 
-    const col1 = images.filter((_, i) => i % 4 === 0);
-    const col2 = images.filter((_, i) => i % 4 === 1);
-    const col3 = images.filter((_, i) => i % 4 === 2);
-    const col4 = images.filter((_, i) => i % 4 === 3);
+    const sortedImages = getSortedImages(images, sortOrder);
+    const col1 = sortedImages.filter((_, i) => i % 4 === 0);
+    const col2 = sortedImages.filter((_, i) => i % 4 === 1);
+    const col3 = sortedImages.filter((_, i) => i % 4 === 2);
+    const col4 = sortedImages.filter((_, i) => i % 4 === 3);
 
     grid.innerHTML = `
       <div class="masonry-col">${col1.map(scraperCard).join("")}</div>
@@ -610,28 +745,24 @@
       </div>`;
   }
 
-  // ── LIBRARY: Load (reads the live, published GitHub file) ──
+  // ── LIBRARY: Load local plugin library ──────────────────────
 
   async function loadLibrary() {
-    setLibStatus("Loading published library...", "loading");
+    setLibStatus("Loading local plugin library...", "loading");
     try {
-      // Reads via the GitHub API, not the raw.githubusercontent.com CDN —
-      // see the comment on PUBLISHED_API_URL above for why: the CDN can
-      // stay stale for minutes and was making removals look like they
-      // silently failed or didn't take effect.
-      const data = await fetchPublishedFresh();
+      const data = await fetchLibraryFresh();
       libraryImages = data;
       libSelectedUrls.clear();
       updateLibSelectionUI();
       renderLibGrid();
       updateLibraryBadgeFromData(data);
     } catch (err) {
-      setLibStatus("Could not load published library: " + err.message, "error");
+      setLibStatus("Could not load local library: " + err.message, "error");
     }
   }
 
   function updateLibraryBadge() {
-    fetchPublishedFresh()
+    fetchLibraryFresh()
       .then(updateLibraryBadgeFromData)
       .catch(() => {});
   }
@@ -673,7 +804,7 @@
     document.getElementById("libSelectAllBtn").textContent = allSelected ? "Deselect All" : "Select All";
   }
 
-  // ── LIBRARY: Remove selected (republishes the remaining set) ─
+  // ── LIBRARY: Remove selected and resync remaining set ───────
 
   async function removeSelected() {
     if (libSelectedUrls.size === 0) return;
@@ -687,43 +818,30 @@
       const urlsToRemove = new Set(libSelectedUrls);
       const count = urlsToRemove.size;
 
-      // Re-fetch the true published state fresh right before diffing —
-      // libraryImages may be stale (loaded minutes ago, changed by another
-      // tab/session, etc). This MUST go through the GitHub API, not
-      // raw.githubusercontent.com: that URL sits behind a CDN that can
-      // serve a stale response for minutes after a commit even with a
-      // cache-busting query string, which was making removals look like
-      // they silently failed (the reload afterward would show the
-      // pre-removal list again).
-      setLibStatus("Checking current published library...", "loading");
-      const freshImages = await fetchPublishedFresh();
+      setLibStatus("Checking current local library...", "loading");
+      const freshImages = await fetchLibraryFresh();
 
       const remaining = freshImages.filter((img) => !urlsToRemove.has(img.url));
 
       if (remaining.length === freshImages.length) {
-        setLibStatus("Nothing to remove — those photos are no longer in the published library (it may have changed since this page loaded). Reloading...", "error");
+        setLibStatus("Nothing to remove — those photos are no longer in the local library (it may have changed since this page loaded). Reloading...", "error");
         await loadLibrary();
         return;
       }
 
       if (remaining.length === 0) {
-        setLibStatus("Can't remove every photo from here — the publish endpoint requires at least one photo. Edit data/images.json directly on GitHub if you really want an empty library.", "error");
+        setLibStatus("Can't remove every photo from here — keep at least one photo selected in the local library.", "error");
         return;
       }
 
-      const confirmed = confirm(`Remove ${count} photo${count > 1 ? "s" : ""} from the published library? This republishes the remaining ${remaining.length} photo${remaining.length === 1 ? "" : "s"} to GitHub.`);
+      const confirmed = confirm(`Remove ${count} photo${count > 1 ? "s" : ""} from the local library? This will re-sync the remaining ${remaining.length} photo${remaining.length === 1 ? "" : "s"} to the plugin.`);
       if (!confirmed) {
         setLibStatus("");
         return;
       }
 
-      setLibStatus(`Removing ${count} photo${count > 1 ? "s" : ""} and republishing...`, "loading");
+      setLibStatus(`Removing ${count} photo${count > 1 ? "s" : ""} and re-syncing...`, "loading");
 
-      // Send the full, verbatim image objects for the remaining set — not
-      // just URLs to be re-matched against the server's local data. The
-      // server's local data/images.json can diverge from what's actually
-      // published on GitHub (e.g. after a redeploy), so filtering by URL
-      // there could silently drop photos nobody asked to remove.
       const res = await fetch("/api/publish", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -732,8 +850,8 @@
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Remove failed");
 
-      setLibStatus(`✓ Removed ${count} photo${count > 1 ? "s" : ""}. <a href="${data.commitUrl}" target="_blank" rel="noopener">View commit</a>`, "success");
-      await loadLibrary(); // refresh from GitHub
+      setLibStatus(`✓ Removed ${count} photo${count > 1 ? "s" : ""} and synced local plugin library.`, "success");
+      await loadLibrary();
     } catch (err) {
       setLibStatus("Remove failed: " + err.message, "error");
     } finally {
@@ -742,27 +860,39 @@
     }
   }
 
-  // ── LIBRARY: Render grid ───────────────────────────────────
+  // ── LIBRARY: Sort & Render ────────────────────────────────
+
+  function toggleLibSort() {
+    libSortOrder = libSortOrder === 'newest' ? 'oldest' : 'newest';
+    updateLibSortButton();
+    renderLibGrid();
+  }
+
+  function updateLibSortButton() {
+    const btn = document.getElementById("libSortBtn");
+    btn.textContent = libSortOrder === 'newest' ? '↓ Newest First' : '↑ Oldest First';
+  }
 
   function renderLibGrid() {
     const grid = document.getElementById("libGrid");
 
     if (!libraryImages || libraryImages.length === 0) {
-      grid.innerHTML = `<div class="empty-state"><h2>Library is empty</h2><p>Go to the Scraper tab, select photos, and click "Publish Selected to Library".</p></div>`;
-      setLibStatus("No photos published yet.");
+      grid.innerHTML = `<div class="empty-state"><h2>Library is empty</h2><p>Go to the Scraper tab, select photos, and click "Sync Selected to Plugin".</p></div>`;
+      setLibStatus("No photos synced yet.");
       return;
     }
 
-    setLibStatus(`${libraryImages.length} photo${libraryImages.length !== 1 ? "s" : ""} currently published and live for the Figma plugin. Select any to remove them.`);
+    setLibStatus(`${libraryImages.length} photo${libraryImages.length !== 1 ? "s" : ""} currently synced and live for the local Figma plugin. Select any to remove them.`);
 
     libSelectedUrls.size > 0
       ? grid.classList.add("has-selection")
       : grid.classList.remove("has-selection");
 
-    const col1 = libraryImages.filter((_, i) => i % 4 === 0);
-    const col2 = libraryImages.filter((_, i) => i % 4 === 1);
-    const col3 = libraryImages.filter((_, i) => i % 4 === 2);
-    const col4 = libraryImages.filter((_, i) => i % 4 === 3);
+    const sortedLibraryImages = getSortedImages(libraryImages, libSortOrder);
+    const col1 = sortedLibraryImages.filter((_, i) => i % 4 === 0);
+    const col2 = sortedLibraryImages.filter((_, i) => i % 4 === 1);
+    const col3 = sortedLibraryImages.filter((_, i) => i % 4 === 2);
+    const col4 = sortedLibraryImages.filter((_, i) => i % 4 === 3);
 
     grid.innerHTML = `
       <div class="masonry-col">${col1.map(libCard).join("")}</div>
@@ -798,7 +928,10 @@
 
   // ── Init ───────────────────────────────────────────────────
   loadImages();
+  updateSortButton();
+  updateLibSortButton();
   updateLibraryBadge();
+  updateRetryButtonState();
 </script>
 </body>
 </html>

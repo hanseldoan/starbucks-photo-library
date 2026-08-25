@@ -1,5 +1,5 @@
 {
-  "name": "Starbucks Stock Images",
+  "name": "Starbucks Photos",
   "id": "1669101964161041325",
   "documentAccess": "dynamic-page",
   "api": "1.0.0",
@@ -9,8 +9,9 @@
   "networkAccess": {
     "allowedDomains": [
       "https://about.starbucks.com",
-      "https://raw.githubusercontent.com"
+      "https://raw.githubusercontent.com",
+      "https://content-prod-live.cert.starbucks.com"
     ],
-    "reasoning": "Fetches Starbucks brand stock images from the official press site, and fetches the current photo database (data/images.json) from the starbucks-photo-library GitHub repo instead of embedding it in the plugin."
+    "reasoning": "Fetches Starbucks brand stock images from: official press site (stories, multimedia, history), featured menu from starbucks.com CDN, and fetches the current photo database (data/images.json) from the starbucks-photo-library GitHub repo."
   }
 }

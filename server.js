@@ -9,15 +9,11 @@
 // 5. Open http://localhost:3000
 // ============================================================
 //
-// WHAT CHANGED FROM THE ORIGINAL SCRAPER:
-// The original tool "published" by writing directly into a Figma plugin's
-// code.js on the SAME machine's disk (via a personal config.json path).
-// That only worked on one computer. This version instead publishes
-// data/images.json straight to GitHub (this repo) via the Contents API.
-// The Figma plugin now fetches that file over the network at load time
-// (see plugin/code.js) — so anyone with a copy of the plugin gets the
-// current library, and anyone who can run this app can scrape and publish,
-// regardless of whose machine it's on.
+// LOCAL-FIRST WORKFLOW:
+// This app scrapes into data/images.json and the review step syncs selected
+// photos into plugin/code.js (bundled snapshot) so the local Figma plugin in
+// this same repo is immediately updated. You can still push these file
+// changes to GitHub afterward for archive/collaboration.
 //
 // The scraping logic below (sources, limits, label/name generation) is
 // carried over from the original tool. If you already had the original
@@ -38,6 +34,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 const DATA_FILE = path.join(__dirname, "data", "images.json");
+const PLUGIN_CODE_FILE = path.join(__dirname, "plugin", "code.js");
 const BASE_URL = "https://about.starbucks.com";
 
 // GitHub publish target — set these in .env (see .env.example).
@@ -55,22 +52,65 @@ const GITHUB_DATA_PATH = "data/images.json";
 // randos from hitting the endpoint and kicking off scrapes.
 const CRON_SECRET = process.env.CRON_SECRET || null;
 
-// Both sources are scraped for high-res images
+// Each source defines its own minimum dimension threshold and search keywords.
+// This allows fine-grained control over image quality per source and improves
+// searchability in the Figma plugin by tagging images with source-specific keywords.
 const SOURCES = [
-  { name: "stories", url: "https://about.starbucks.com/stories/" },
-  { name: "multimedia", url: "https://about.starbucks.com/multimedia/" },
+  {
+    name: "stories",
+    url: "https://about.starbucks.com/stories/",
+    minDimension: 1000,
+    keywords: ["story", "storytelling", "brand narrative"],
+  },
+  {
+    name: "multimedia",
+    url: "https://about.starbucks.com/multimedia/",
+    minDimension: 1000,
+    keywords: ["multimedia", "promotional", "assets", "campaign"],
+  },
+  {
+    name: "history",
+    url: "https://about.starbucks.com/history/",
+    minDimension: 1000,
+    keywords: ["history", "heritage", "brand story", "iconic"],
+  },
+  {
+    name: "featured",
+    url: "https://www.starbucks.com/menu/featured/",
+    minDimension: 300,
+    requireDimensionParse: false,
+    keywords: ["menu", "featured", "product", "drink", "food"],
+  },
 ];
 
-const MAX_PAGES_PER_SOURCE = 20; // max individual content pages per source
-const MAX_INDEX_PAGES = 50; // max pagination pages per source index
-const MIN_DIMENSION = 1000; // keep images larger than this
-const REQUEST_DELAY = 1500; // ms between page loads
+const MAX_PAGES_PER_SOURCE = Number(process.env.MAX_PAGES_PER_SOURCE || 20); // max individual content pages per source
+const MAX_INDEX_PAGES = Number(process.env.MAX_INDEX_PAGES || 50); // max pagination pages per source index
+const REQUEST_DELAY = Number(process.env.REQUEST_DELAY_MS || 500); // ms between page loads
+
+let isScraping = false;
+let scrapeStatus = {
+  isRunning: false,
+  startedAt: null,
+  finishedAt: null,
+  lastError: null,
+  lastWarning: null,
+  lastMessage: "Idle",
+  startCount: 0,
+  endCount: 0,
+};
 
 // ============================================================
 // MIDDLEWARE
 // ============================================================
 
 app.use(express.json({ limit: "10mb" }));
+app.use((req, res, next) => {
+  // Local admin UI should always load fresh JS/CSS after edits.
+  res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  res.set("Pragma", "no-cache");
+  res.set("Expires", "0");
+  next();
+});
 app.use(express.static(path.join(__dirname, "public")));
 
 // ============================================================
@@ -82,12 +122,27 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function normalizeUrl(url) {
+function normalizeUrl(url, baseUrl = BASE_URL) {
   if (!url) return null;
-  if (url.startsWith("http://") || url.startsWith("https://")) return url;
-  if (url.startsWith("//")) return "https:" + url;
-  if (url.startsWith("/")) return BASE_URL + url;
-  return null;
+
+  try {
+    return new URL(url, baseUrl).toString();
+  } catch {
+    return null;
+  }
+}
+
+function isBotChallengePage(title, bodyText = "") {
+  const t = String(title || "").toLowerCase();
+  const b = String(bodyText || "").toLowerCase();
+
+  return (
+    t.includes("just a moment") ||
+    b.includes("checking your browser") ||
+    b.includes("please enable javascript") ||
+    b.includes("security check") ||
+    b.includes("cloudflare")
+  );
 }
 
 // Read dimensions encoded in filename: "image-2048x1365.jpg" → { width:2048, height:1365 }
@@ -146,6 +201,38 @@ function writeDataFile(images) {
   fs.writeFileSync(DATA_FILE, JSON.stringify(images, null, 2), "utf8");
 }
 
+function syncPluginSnapshot(images) {
+  if (!fs.existsSync(PLUGIN_CODE_FILE)) {
+    throw new Error(`Plugin file not found: ${PLUGIN_CODE_FILE}`);
+  }
+
+  const snapshotImages = images.map((img) => ({
+    url: img.url,
+    label: img.figmaLabel || img.title || img.url,
+    timestamp: img.timestamp || null,
+  }));
+
+  const snapshotLastUpdated = new Date().toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+  });
+
+  const snapshotJson = JSON.stringify(snapshotImages, null, 2);
+  let pluginCode = fs.readFileSync(PLUGIN_CODE_FILE, "utf8");
+
+  pluginCode = pluginCode.replace(
+    /const SNAPSHOT_LAST_UPDATED = "[^"]*";/,
+    `const SNAPSHOT_LAST_UPDATED = "${snapshotLastUpdated}";`
+  );
+
+  pluginCode = pluginCode.replace(
+    /const SNAPSHOT_IMAGES = \[[\s\S]*?\];/,
+    `const SNAPSHOT_IMAGES = ${snapshotJson};`
+  );
+
+  fs.writeFileSync(PLUGIN_CODE_FILE, pluginCode, "utf8");
+}
+
 // ============================================================
 // SCRAPER
 // ============================================================
@@ -155,13 +242,19 @@ async function collectIndexPageUrls(page, source) {
   let currentUrl = source.url;
 
   for (let i = 0; i < MAX_INDEX_PAGES && urls.size < MAX_PAGES_PER_SOURCE * 3; i++) {
-    await page.goto(currentUrl, { waitUntil: "networkidle2", timeout: 30000 });
+    await page.goto(currentUrl, { waitUntil: "domcontentloaded", timeout: 20000 });
+    const pageTitle = await page.title();
+    const bodyText = await page.evaluate(() => (document.body ? document.body.innerText : ""));
+    if (isBotChallengePage(pageTitle, bodyText)) {
+      throw new Error(`Blocked by bot challenge at ${currentUrl}`);
+    }
+
     const html = await page.content();
     const $ = cheerio.load(html);
 
     // Collect links to individual story/multimedia pages on this index page
     $("a[href]").each((_, el) => {
-      const href = normalizeUrl($(el).attr("href"));
+      const href = normalizeUrl($(el).attr("href"), source.url);
       if (href && href.startsWith(source.url) && href !== source.url) {
         urls.add(href.split("#")[0]);
       }
@@ -169,7 +262,7 @@ async function collectIndexPageUrls(page, source) {
 
     // Follow a "next page" pagination link if one exists
     const nextHref = $("a.next, a[rel='next']").first().attr("href");
-    const nextUrl = normalizeUrl(nextHref);
+    const nextUrl = normalizeUrl(nextHref, source.url);
     if (!nextUrl || nextUrl === currentUrl) break;
     currentUrl = nextUrl;
     await sleep(REQUEST_DELAY);
@@ -178,8 +271,14 @@ async function collectIndexPageUrls(page, source) {
   return Array.from(urls).slice(0, MAX_PAGES_PER_SOURCE);
 }
 
-async function scrapeContentPage(page, pageUrl, sourceName) {
-  await page.goto(pageUrl, { waitUntil: "networkidle2", timeout: 30000 });
+async function scrapeContentPage(page, pageUrl, source) {
+  await page.goto(pageUrl, { waitUntil: "domcontentloaded", timeout: 20000 });
+  const pageTitle = await page.title();
+  const bodyText = await page.evaluate(() => (document.body ? document.body.innerText : ""));
+  if (isBotChallengePage(pageTitle, bodyText)) {
+    throw new Error(`Blocked by bot challenge at ${pageUrl}`);
+  }
+
   const html = await page.content();
   const $ = cheerio.load(html);
 
@@ -187,23 +286,38 @@ async function scrapeContentPage(page, pageUrl, sourceName) {
   const found = [];
 
   $("img[src]").each((_, el) => {
-    const src = normalizeUrl($(el).attr("src"));
+    const src = normalizeUrl($(el).attr("src"), pageUrl);
     if (!src) return;
 
     const dims = parseDimensionsFromUrl(src);
-    if (!dims) return; // skip images we can't size from the filename
-    if (dims.width < MIN_DIMENSION && dims.height < MIN_DIMENSION) return;
+    
+    // If this source requires dimension parsing and we couldn't parse it, skip
+    if (source.requireDimensionParse !== false && !dims) return;
+    
+    // If we have dimensions, check against source's minimum threshold
+    if (dims && dims.width < source.minDimension && dims.height < source.minDimension) return;
+
+    // Generate base labels from page title and URL
+    const labels = generateLabels(title, pageUrl);
+    // Add source-specific keywords for enhanced searchability
+    if (source.keywords) {
+      source.keywords.forEach((keyword) => {
+        if (!labels.includes(keyword)) {
+          labels.push(keyword);
+        }
+      });
+    }
 
     found.push({
       url: src,
       figmaLabel: figmaLabelFor(title, src),
       title,
       pageUrl,
-      width: dims.width,
-      height: dims.height,
+      width: dims?.width,
+      height: dims?.height,
       timestamp: new Date().toISOString(),
-      labels: generateLabels(title, pageUrl),
-      source: sourceName,
+      labels,
+      source: source.name,
     });
   });
 
@@ -211,6 +325,25 @@ async function scrapeContentPage(page, pageUrl, sourceName) {
 }
 
 async function runScraper() {
+  if (isScraping) {
+    throw new Error("Scrape is already running");
+  }
+
+  const existing = readDataFile();
+
+  isScraping = true;
+  scrapeStatus = {
+    ...scrapeStatus,
+    isRunning: true,
+    startedAt: new Date().toISOString(),
+    finishedAt: null,
+    lastError: null,
+    lastWarning: null,
+    lastMessage: "Scrape in progress",
+    startCount: existing.length,
+    endCount: existing.length,
+  };
+
   console.log("\n=== Scrape started ===");
   // --no-sandbox is required in most Linux containers (Render, Docker, etc.) —
   // Chrome's default sandboxing needs kernel privileges those containers don't grant.
@@ -218,41 +351,74 @@ async function runScraper() {
     headless: "new",
     args: ["--no-sandbox", "--disable-setuid-sandbox"],
   });
-  const existing = readDataFile();
   const existingUrls = new Set(existing.map((img) => img.url));
   const allImages = [...existing];
 
   try {
     const page = await browser.newPage();
+    const sourceFailures = [];
 
     for (const source of SOURCES) {
-      console.log(`\n--- Source: ${source.name} ---`);
-      const contentUrls = await collectIndexPageUrls(page, source);
-      console.log(`Found ${contentUrls.length} pages to visit for ${source.name}`);
+      try {
+        console.log(`\n--- Source: ${source.name} ---`);
+        const contentUrls = await collectIndexPageUrls(page, source);
+        console.log(`Found ${contentUrls.length} pages to visit for ${source.name}`);
 
-      for (const url of contentUrls) {
-        try {
-          const images = await scrapeContentPage(page, url, source.name);
-          for (const img of images) {
-            if (!existingUrls.has(img.url)) {
-              existingUrls.add(img.url);
-              allImages.push(img);
+        for (const url of contentUrls) {
+          try {
+            const images = await scrapeContentPage(page, url, source);
+            for (const img of images) {
+              if (!existingUrls.has(img.url)) {
+                existingUrls.add(img.url);
+                allImages.push(img);
+              }
             }
+            console.log(`  ${url} -> ${images.length} images`);
+          } catch (err) {
+            console.error(`  Failed on ${url}: ${err.message}`);
           }
-          console.log(`  ${url} -> ${images.length} images`);
-        } catch (err) {
-          console.error(`  Failed on ${url}: ${err.message}`);
+          await sleep(REQUEST_DELAY);
         }
-        await sleep(REQUEST_DELAY);
+      } catch (err) {
+        sourceFailures.push(`${source.name}: ${err.message}`);
+        console.error(`Source ${source.name} blocked/failed: ${err.message}`);
       }
     }
 
     writeDataFile(allImages);
+
+    if (sourceFailures.length === SOURCES.length) {
+      throw new Error(`All sources failed: ${sourceFailures.join(" | ")}`);
+    }
+
+    const warningMessage = sourceFailures.length
+      ? `Some sources failed: ${sourceFailures.join(" | ")}`
+      : null;
+
+    scrapeStatus = {
+      ...scrapeStatus,
+      isRunning: false,
+      finishedAt: new Date().toISOString(),
+      lastError: null,
+      lastWarning: warningMessage,
+      lastMessage: warningMessage ? "Scrape complete with warnings" : "Scrape complete",
+      endCount: allImages.length,
+    };
     console.log(`\n=== Scrape complete. ${allImages.length} images saved. ===\n`);
     return allImages;
   } catch (err) {
+    scrapeStatus = {
+      ...scrapeStatus,
+      isRunning: false,
+      finishedAt: new Date().toISOString(),
+      lastError: err.message,
+      lastWarning: null,
+      lastMessage: "Scrape failed",
+    };
     console.error("Scraper error:", err.message);
+    throw err;
   } finally {
+    isScraping = false;
     if (browser) await browser.close();
   }
 }
@@ -311,9 +477,20 @@ app.get("/api/images", (req, res) => {
   res.json(readDataFile());
 });
 
+app.get("/api/scrape-status", (req, res) => {
+  res.json(scrapeStatus);
+});
+
 app.post("/api/scrape", (req, res) => {
-  res.json({ message: "Scraping started. Watch your terminal for progress." });
-  runScraper().catch((err) => console.error("Scraper error:", err.message));
+  if (isScraping) {
+    return res.status(409).json({ message: "Scrape already in progress. Please wait." });
+  }
+
+  res.json({
+    message: "Scraping started. Watch your terminal for progress.",
+    startedAt: scrapeStatus.startedAt,
+  });
+  runScraper().catch(() => {});
 });
 
 app.post("/api/download", async (req, res) => {
@@ -342,11 +519,10 @@ app.post("/api/download", async (req, res) => {
   console.log("ZIP ready.");
 });
 
-// POST /api/publish — review step: publish selected (or all) images to GitHub.
-// This replaces the old /api/sync-plugin, /api/plugin-images, and
-// /api/remove-from-plugin routes, which all worked by writing directly into
-// a local plugin file and no longer apply now that the plugin fetches from
-// GitHub instead.
+// POST /api/publish — local-first review step: sync selected (or all)
+// images into this repo's local data/images.json and plugin/code.js snapshot.
+// This keeps the Figma plugin current on the same machine without requiring
+// a GitHub API publish.
 //
 // Accepts either:
 //   { urls: [...] }   — publish the subset of LOCAL data/images.json matching
@@ -381,10 +557,17 @@ app.post("/api/publish", async (req, res) => {
   }
 
   try {
-    const commit = await publishToGitHub(toPublish);
-    res.json({ success: true, published: toPublish.length, commitUrl: commit.html_url });
+    writeDataFile(toPublish);
+    syncPluginSnapshot(toPublish);
+
+    res.json({
+      success: true,
+      published: toPublish.length,
+      mode: "local",
+      message: "Local library and plugin snapshot updated.",
+    });
   } catch (err) {
-    console.error("Publish error:", err.message);
+    console.error("Local publish error:", err.message);
     res.status(500).json({ error: err.message });
   }
 });
@@ -428,7 +611,7 @@ app.listen(PORT, () => {
   console.log(`\nStarbucks Photo Library → http://localhost:${PORT}`);
   console.log(`Data: ${DATA_FILE}\n`);
   if (!GITHUB_TOKEN) {
-    console.log("Note: GITHUB_TOKEN not set — scraping/downloading works, publishing won't.\n");
+    console.log("Note: GITHUB_TOKEN not set — local sync works; GitHub API publish endpoints are disabled.\n");
   }
   if (!CRON_SECRET) {
     console.log("Note: CRON_SECRET not set — /api/cron/scrape-and-publish is disabled.\n");

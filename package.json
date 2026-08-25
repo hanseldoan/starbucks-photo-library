@@ -1,7 +1,7 @@
 {
   "name": "starbucks-photo-library",
   "version": "2.0.0",
-  "description": "Scrapes high-res images from Starbucks Stories/Multimedia and publishes them to GitHub for the Starbucks Stock Images Figma plugin to consume.",
+  "description": "Scrapes high-res images from Starbucks Stories/Multimedia and publishes them to GitHub for the Starbucks Photos Figma plugin to consume.",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"

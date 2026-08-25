@@ -1,7 +1,7 @@
 # Starbucks Photo Library
 
-A scraper + Figma plugin pair for keeping a library of high-res Starbucks
-brand images available to anyone designing in Figma.
+A scraper + Figma plugin pair for keeping a local library of high-res
+Starbucks brand images available in Figma.
 
 ```text
 Collaborator
@@ -19,19 +19,16 @@ Plugin users get the latest photos
 
 ## Why this exists
 
-This replaces an earlier version of the tool
-(`hanseldoan/starbucksfigmapluginphotos`) where the scraper only worked by
-writing directly into the Figma plugin's source file on the same computer's
-disk. That meant only one person, on one machine, could ever run it. This
-version publishes the photo database to GitHub instead, so the scraper can
-run anywhere (including hosted, for a collaborator to use from a browser)
-and the plugin just reads the current published version over the network.
+This project now uses a local-first workflow: scrape and review in the web UI,
+then sync selected photos directly into the local Figma plugin snapshot in
+this same repo. After that, push to GitHub when you want an archive or to
+share updates.
 
 ## Structure
 
 ```text
-server.js          Express app: scraping, ZIP download, GitHub publish
-public/index.html  Web UI: scan, review/select, download, publish
+server.js          Express app: scraping, ZIP download, local plugin sync
+public/index.html  Web UI: scan, review/select, download, sync
 data/images.json   The photo database — source of truth, versioned via git
 plugin/
   manifest.json    Figma plugin manifest
@@ -43,15 +40,15 @@ plugin/
 
 ```bash
 npm install
-cp .env.example .env   # fill in GITHUB_TOKEN if you want to publish
+cp .env.example .env   # optional: fill in GITHUB_TOKEN only if using GitHub API publish endpoints
 node server.js
 open http://localhost:3000
 ```
 
 Workflow: **Scan for Photos** → review the results → select the ones you
-want → **Publish Selected to Library**, which commits `data/images.json` to
-this repo. The Figma plugin picks up the change on its next load — no local
-file writes, no per-machine setup.
+want → **Sync Selected to Plugin**. This updates both `data/images.json` and
+the plugin snapshot in `plugin/code.js` locally. Then commit/push to GitHub
+when you want to archive/share the latest version.
 
 `GITHUB_TOKEN` should be a fine-grained personal access token scoped to just
 this repo with Contents: Read and write. Only needed for publishing —
