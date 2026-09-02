@@ -27,6 +27,7 @@ const puppeteer = require("puppeteer");
 const archiver = require("archiver");
 const axios = require("axios");
 const cheerio = require("cheerio");
+const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 
@@ -87,6 +88,17 @@ const MAX_PAGES_PER_SOURCE = Number(process.env.MAX_PAGES_PER_SOURCE || 20); // 
 const MAX_INDEX_PAGES = Number(process.env.MAX_INDEX_PAGES || 50); // max pagination pages per source index
 const REQUEST_DELAY = Number(process.env.REQUEST_DELAY_MS || 500); // ms between page loads
 
+// Fallback source config applied to manually-pasted page URLs (see /api/import-urls) —
+// same quality bar as the "stories" source since we don't know which source a
+// one-off URL belongs to.
+const MANUAL_SOURCE = {
+  name: "manual",
+  minDimension: 1000,
+  keywords: ["manual-import"],
+};
+
+const IMAGE_URL_PATTERN = /\.(jpg|jpeg|png|webp|gif)(\?.*)?$/i;
+
 let isScraping = false;
 let scrapeStatus = {
   isRunning: false,
@@ -97,6 +109,19 @@ let scrapeStatus = {
   lastMessage: "Idle",
   startCount: 0,
   endCount: 0,
+};
+
+let isImporting = false;
+let importStatus = {
+  isRunning: false,
+  startedAt: null,
+  finishedAt: null,
+  lastError: null,
+  lastWarning: null,
+  lastMessage: "Idle",
+  addedCount: 0,
+  duplicateCount: 0,
+  failedCount: 0,
 };
 
 // ============================================================
@@ -185,6 +210,39 @@ function figmaLabelFor(title, url) {
   const category = cleanTitle(title);
   const name = filenameToName(url);
   return name ? `${category} — ${name}` : category;
+}
+
+// Content hash is the reliable, source-agnostic way to tell two images apart:
+// the same photo can show up at different URLs (different CDN host, resized
+// variant, tracking query params, http vs https), but its bytes are identical.
+// Returns null (instead of throwing) on download failure so a single bad URL
+// doesn't block the rest of a scan/import — that image falls back to
+// URL-only dedup.
+async function computeImageHash(url) {
+  try {
+    const response = await axios.get(url, {
+      responseType: "arraybuffer",
+      timeout: 15000,
+      headers: STATIC_FETCH_HEADERS,
+    });
+    return crypto.createHash("sha256").update(response.data).digest("hex");
+  } catch (err) {
+    console.error(`  Could not hash ${url}: ${err.message}`);
+    return null;
+  }
+}
+
+// Given a candidate image URL and the sets of URLs/hashes already in the
+// library, decide whether it's a duplicate. Checks the fast exact-URL match
+// first, then falls back to a content hash so resized/re-hosted copies of an
+// already-known photo are still caught.
+async function checkDuplicate(url, existingUrls, existingHashes) {
+  if (existingUrls.has(url)) return { isDuplicate: true, hash: null };
+
+  const hash = await computeImageHash(url);
+  if (hash && existingHashes.has(hash)) return { isDuplicate: true, hash };
+
+  return { isDuplicate: false, hash };
 }
 
 function readDataFile() {
@@ -280,6 +338,39 @@ async function scrapeContentPage(page, pageUrl, source) {
   }
 
   const html = await page.content();
+  return extractImagesFromHtml(html, pageUrl, source);
+}
+
+// Realistic browser headers for the static (non-Puppeteer) fetch path below —
+// plain axios requests get a generic "axios/x.x.x" User-Agent that some sites'
+// bot detection flags on sight, separately from the headless-browser
+// fingerprinting that trips up Puppeteer.
+const STATIC_FETCH_HEADERS = {
+  "User-Agent":
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+  Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+  "Accept-Language": "en-US,en;q=0.9",
+  // Some CDN paths (e.g. WordPress uploads) hotlink-protect based on Referer.
+  Referer: `${BASE_URL}/`,
+};
+
+// Static (no browser) fallback for scraping a single page's images. Cheaper
+// and faster than launching Puppeteer, and avoids headless-browser
+// fingerprinting some sites specifically block — worth trying first for a
+// one-off manually-pasted URL before falling back to a full browser.
+async function scrapeContentPageStatic(pageUrl, source) {
+  const response = await axios.get(pageUrl, { headers: STATIC_FETCH_HEADERS, timeout: 20000 });
+  const html = response.data;
+  const $ = cheerio.load(html);
+  const pageTitle = $("title").text();
+  if (isBotChallengePage(pageTitle, html)) {
+    throw new Error(`Blocked by bot challenge at ${pageUrl}`);
+  }
+
+  return extractImagesFromHtml(html, pageUrl, source);
+}
+
+function extractImagesFromHtml(html, pageUrl, source) {
   const $ = cheerio.load(html);
 
   const title = cleanTitle($("h1").first().text() || $("title").text() || pageUrl);
@@ -324,6 +415,7 @@ async function scrapeContentPage(page, pageUrl, source) {
   return found;
 }
 
+
 async function runScraper() {
   if (isScraping) {
     throw new Error("Scrape is already running");
@@ -352,6 +444,7 @@ async function runScraper() {
     args: ["--no-sandbox", "--disable-setuid-sandbox"],
   });
   const existingUrls = new Set(existing.map((img) => img.url));
+  const existingHashes = new Set(existing.filter((img) => img.hash).map((img) => img.hash));
   const allImages = [...existing];
 
   try {
@@ -367,13 +460,16 @@ async function runScraper() {
         for (const url of contentUrls) {
           try {
             const images = await scrapeContentPage(page, url, source);
+            let addedFromPage = 0;
             for (const img of images) {
-              if (!existingUrls.has(img.url)) {
-                existingUrls.add(img.url);
-                allImages.push(img);
-              }
+              const { isDuplicate, hash } = await checkDuplicate(img.url, existingUrls, existingHashes);
+              if (isDuplicate) continue;
+              existingUrls.add(img.url);
+              if (hash) existingHashes.add(hash);
+              allImages.push({ ...img, hash });
+              addedFromPage++;
             }
-            console.log(`  ${url} -> ${images.length} images`);
+            console.log(`  ${url} -> ${addedFromPage} new image(s) (${images.length} found)`);
           } catch (err) {
             console.error(`  Failed on ${url}: ${err.message}`);
           }
@@ -419,6 +515,155 @@ async function runScraper() {
     throw err;
   } finally {
     isScraping = false;
+    if (browser) await browser.close();
+  }
+}
+
+// Manual import — lets a user paste in specific URLs (page URLs to crawl for
+// images, or direct image file URLs) instead of waiting for the automated
+// crawler to find them, for cases like campaign/landing pages that the
+// index-page crawl doesn't discover. Uses the same hash-based dedup as
+// runScraper so images picked up here can't end up duplicated with — or by —
+// a later automated scan.
+//
+// Callers must set isImporting/importStatus.startedAt synchronously before
+// invoking this (see the /api/import-urls route) so the value handed back to
+// the client in the HTTP response is guaranteed to match this run, not a
+// stale value from a previous run — otherwise the client's completion check
+// (which compares against that startedAt) can never match and polls forever.
+async function runImport(rawUrls) {
+  const urls = Array.from(
+    new Set(rawUrls.map((u) => String(u || "").trim()).filter(Boolean))
+  );
+  if (urls.length === 0) {
+    isImporting = false;
+    importStatus = {
+      ...importStatus,
+      isRunning: false,
+      finishedAt: new Date().toISOString(),
+      lastError: "No URLs provided",
+      lastMessage: "Import failed",
+    };
+    return;
+  }
+
+  const existing = readDataFile();
+
+  console.log(`\n=== Import started for ${urls.length} URL(s) ===`);
+
+  const existingUrls = new Set(existing.map((img) => img.url));
+  const existingHashes = new Set(existing.filter((img) => img.hash).map((img) => img.hash));
+  const allImages = [...existing];
+
+  let addedCount = 0;
+  let duplicateCount = 0;
+  const failed = [];
+
+  let browser = null;
+  let page = null;
+
+  // Puppeteer is only launched lazily, on the first page URL where the
+  // static fetch gets blocked — most pages don't need a real browser.
+  async function getPuppeteerPage() {
+    if (!page) {
+      browser = await puppeteer.launch({
+        headless: "new",
+        args: ["--no-sandbox", "--disable-setuid-sandbox"],
+      });
+      page = await browser.newPage();
+    }
+    return page;
+  }
+
+  try {
+    for (const url of urls) {
+      try {
+        let candidates;
+
+        if (IMAGE_URL_PATTERN.test(url)) {
+          // Direct image URL — the user explicitly chose this photo, so it
+          // bypasses the source's minDimension filtering.
+          const normalized = normalizeUrl(url) || url;
+          const title = filenameToName(normalized) || normalized;
+          candidates = [
+            {
+              url: normalized,
+              figmaLabel: figmaLabelFor(title, normalized),
+              title,
+              pageUrl: normalized,
+              width: parseDimensionsFromUrl(normalized)?.width,
+              height: parseDimensionsFromUrl(normalized)?.height,
+              timestamp: new Date().toISOString(),
+              labels: generateLabels(title, normalized).concat(["manual-import"]),
+              source: MANUAL_SOURCE.name,
+            },
+          ];
+        } else {
+          try {
+            candidates = await scrapeContentPageStatic(url, MANUAL_SOURCE);
+          } catch (staticErr) {
+            console.log(`  Static fetch failed for ${url} (${staticErr.message}), retrying with a browser...`);
+            candidates = await scrapeContentPage(await getPuppeteerPage(), url, MANUAL_SOURCE);
+          }
+        }
+
+        for (const candidate of candidates) {
+          const { isDuplicate, hash } = await checkDuplicate(candidate.url, existingUrls, existingHashes);
+          if (isDuplicate) {
+            duplicateCount++;
+            continue;
+          }
+          existingUrls.add(candidate.url);
+          if (hash) existingHashes.add(hash);
+          allImages.push({ ...candidate, hash });
+          addedCount++;
+        }
+
+        console.log(`  ${url} -> ${candidates.length} candidate(s) found`);
+      } catch (err) {
+        failed.push(`${url}: ${err.message}`);
+        console.error(`  Failed on ${url}: ${err.message}`);
+      }
+      await sleep(REQUEST_DELAY);
+    }
+
+    writeDataFile(allImages);
+
+    if (failed.length === urls.length) {
+      throw new Error(`All URLs failed: ${failed.join(" | ")}`);
+    }
+
+    const warningMessage = failed.length ? `Some URLs failed: ${failed.join(" | ")}` : null;
+
+    importStatus = {
+      ...importStatus,
+      isRunning: false,
+      finishedAt: new Date().toISOString(),
+      lastError: null,
+      lastWarning: warningMessage,
+      lastMessage: warningMessage ? "Import complete with warnings" : "Import complete",
+      addedCount,
+      duplicateCount,
+      failedCount: failed.length,
+    };
+    console.log(`\n=== Import complete. ${addedCount} new image(s), ${duplicateCount} duplicate(s) skipped. ===\n`);
+    return allImages;
+  } catch (err) {
+    importStatus = {
+      ...importStatus,
+      isRunning: false,
+      finishedAt: new Date().toISOString(),
+      lastError: err.message,
+      lastWarning: null,
+      lastMessage: "Import failed",
+      addedCount,
+      duplicateCount,
+      failedCount: failed.length,
+    };
+    console.error("Import error:", err.message);
+    throw err;
+  } finally {
+    isImporting = false;
     if (browser) await browser.close();
   }
 }
@@ -491,6 +736,43 @@ app.post("/api/scrape", (req, res) => {
     startedAt: scrapeStatus.startedAt,
   });
   runScraper().catch(() => {});
+});
+
+app.get("/api/import-status", (req, res) => {
+  res.json(importStatus);
+});
+
+app.post("/api/import-urls", (req, res) => {
+  if (isScraping || isImporting) {
+    return res.status(409).json({ message: "A scan or import is already in progress. Please wait." });
+  }
+
+  const { urls } = req.body;
+  if (!Array.isArray(urls) || urls.length === 0) {
+    return res.status(400).json({ message: "No URLs provided." });
+  }
+
+  // Set these synchronously, before responding, so the startedAt sent back
+  // to the client is this run's real timestamp (see comment on runImport).
+  isImporting = true;
+  importStatus = {
+    ...importStatus,
+    isRunning: true,
+    startedAt: new Date().toISOString(),
+    finishedAt: null,
+    lastError: null,
+    lastWarning: null,
+    lastMessage: "Import in progress",
+    addedCount: 0,
+    duplicateCount: 0,
+    failedCount: 0,
+  };
+
+  res.json({
+    message: "Import started. Watch your terminal for progress.",
+    startedAt: importStatus.startedAt,
+  });
+  runImport(urls).catch(() => {});
 });
 
 app.post("/api/download", async (req, res) => {

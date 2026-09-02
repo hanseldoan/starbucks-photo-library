@@ -15,7 +15,7 @@ const DATA_URL =
 const USE_REMOTE_LIBRARY = false;
 
 // Bundled local snapshot updated by the scraper app's /api/publish route.
-const SNAPSHOT_LAST_UPDATED = "August 2026";
+const SNAPSHOT_LAST_UPDATED = "September 2026";
 const SNAPSHOT_IMAGES = [
   {
     "url": "https://about.starbucks.com/uploads/2025/09/Starbucks-Coffeehouse-NYC-Union-Square-East-6-2048x1365.jpg",
@@ -1121,6 +1121,41 @@ const SNAPSHOT_IMAGES = [
     "url": "https://content-prod-live.cert.starbucks.com/binary/v2/asset/137-112101.jpg",
     "label": "More pumpkin, please — 137 112101",
     "timestamp": "2026-08-25T16:43:30.957Z"
+  },
+  {
+    "url": "https://about.starbucks.com/uploads/2026/08/SBX-FALL2-26_02_PumpkinSpiceLatte-BrownSugarIcedShakenEspressoWithPumpkinCreamColdFoam-IcedPumpkinMatcha_MASTER-format-jpg-300dpi-expanded-scaled.jpg",
+    "label": "Sbx Fall2 26 02 Pumpkinspicelatte Brownsugaricedshakenespressowithpumpkincreamcoldfoam Icedpumpkinmatcha Master Format Jpg 300dpi Expanded Scaled — Sbx Fall2 26 02 Pumpkinspicelatte Brownsugaricedshakenespressowithpumpkincreamcoldfoam Icedpumpkinmatcha Master Format Jpg 300dpi Expanded Scaled",
+    "timestamp": "2026-09-02T15:18:52.475Z"
+  },
+  {
+    "url": "https://about.starbucks.com/uploads/2026/08/SBX-FALL3-26_02_PumpkinSpiceLatte-BrownSugarIcedShakenEspressoPumpkinCreamColdFoam-IcedPumpkinChai_MASTER-2048x2048-1-1024x1280.jpg",
+    "label": "Sbx Fall3 26 02 Pumpkinspicelatte Brownsugaricedshakenespressopumpkincreamcoldfoam Icedpumpkinchai Master 2048x2048 1 — Sbx Fall3 26 02 Pumpkinspicelatte Brownsugaricedshakenespressopumpkincreamcoldfoam Icedpumpkinchai Master 2048x2048 1",
+    "timestamp": "2026-09-02T15:18:53.173Z"
+  },
+  {
+    "url": "https://about.starbucks.com/uploads/2026/08/SBX-FALL1-26_14_BananaWalnutPecanLoaf-PumpkinCreamCheeseMuffin_CMYK-format-jpg-300dpi-1.jpg",
+    "label": "Sbx Fall1 26 14 Bananawalnutpecanloaf Pumpkincreamcheesemuffin Cmyk Format Jpg 300dpi 1 — Sbx Fall1 26 14 Bananawalnutpecanloaf Pumpkincreamcheesemuffin Cmyk Format Jpg 300dpi 1",
+    "timestamp": "2026-09-02T15:18:53.727Z"
+  },
+  {
+    "url": "https://about.starbucks.com/uploads/2026/08/Pumpkin-Farm-5.jpg",
+    "label": "Pumpkin Farm 5 — Pumpkin Farm 5",
+    "timestamp": "2026-09-02T15:18:54.277Z"
+  },
+  {
+    "url": "https://about.starbucks.com/uploads/2026/08/FY26_SBX_JS_PumpkinSpiceLatte_0212_ALT_FAVS_R-1024x1536.jpg",
+    "label": "Fy26 Sbx Js Pumpkinspicelatte 0212 Alt Favs R — Fy26 Sbx Js Pumpkinspicelatte 0212 Alt Favs R",
+    "timestamp": "2026-09-02T15:18:54.828Z"
+  },
+  {
+    "url": "https://about.starbucks.com/uploads/2026/08/Starbucks-Fall-Menu-Preview-2026-Chicken-Wrap-1024x1535.jpg",
+    "label": "Starbucks Fall Menu Preview 2026 Chicken Wrap — Starbucks Fall Menu Preview 2026 Chicken Wrap",
+    "timestamp": "2026-09-02T15:18:55.375Z"
+  },
+  {
+    "url": "https://about.starbucks.com/uploads/2026/08/SBX-FALL-26-AFTN_20_HotPumpkinSpiceLatte-PumpkinCreamCheeseMuffin_MASTER-format-jpg-300dpi-scaled-e1787094027527-1024x1314.jpeg",
+    "label": "Sbx Fall 26 Aftn 20 Hotpumpkinspicelatte Pumpkincreamcheesemuffin Master Format Jpg 300dpi Scaled E1787094027527 — Sbx Fall 26 Aftn 20 Hotpumpkinspicelatte Pumpkincreamcheesemuffin Master Format Jpg 300dpi Scaled E1787094027527",
+    "timestamp": "2026-09-02T15:18:55.917Z"
   }
 ];
 

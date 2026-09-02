@@ -204,6 +204,41 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
+    /* ── Import from URLs modal ── */
+    .import-modal {
+      width: min(520px, calc(100vw - 32px));
+      padding: 20px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    }
+    .import-modal::backdrop { background: rgba(0,0,0,0.4); }
+    .import-modal-title { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+    .import-modal-desc {
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      margin-bottom: 12px;
+    }
+    .import-modal-textarea {
+      width: 100%;
+      min-height: 140px;
+      resize: vertical;
+      padding: 10px;
+      font-size: 12px;
+      font-family: inherit;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+    }
+    .import-modal-textarea:focus { outline: none; border-color: var(--accent); }
+    .import-modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
     /* ── Grids ── */
     .grid-wrap { padding: 24px 32px; }
 
@@ -335,6 +370,7 @@
 
   <div class="toolbar">
     <button class="btn btn-primary" id="scanBtn" onclick="startScan()">Scan for Photos</button>
+    <button class="btn btn-secondary" id="importBtn" onclick="openImportModal()">Import from URLs</button>
     <button class="btn btn-secondary" id="downloadBtn" onclick="downloadSelected()" disabled>Download Selected</button>
     <button class="btn btn-publish" id="publishBtn" onclick="publishSelected()">Sync Selected to Plugin</button>
     <button class="btn btn-ghost" id="sortBtn" onclick="toggleSort()" title="Sort order">↓ Newest First</button>
@@ -357,6 +393,24 @@
   </div>
 
 </div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- IMPORT FROM URLS MODAL                                     -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<dialog id="importModal" class="import-modal">
+  <div class="import-modal-title">Import from URLs</div>
+  <p class="import-modal-desc">
+    Paste one or more URLs, one per line. Page URLs (e.g. a story page) are scanned for
+    photos using the same size rules as "Scan for Photos". Direct image URLs (ending in
+    .jpg, .png, etc.) are added as-is. Duplicates already in the library are skipped
+    automatically.
+  </p>
+  <textarea id="importUrlsInput" class="import-modal-textarea" placeholder="https://about.starbucks.com/stories/2026/fall-starts-with-starbucks/&#10;https://about.starbucks.com/uploads/2026/07/example-2048x1365.jpg"></textarea>
+  <div class="import-modal-actions">
+    <button class="btn btn-ghost" onclick="closeImportModal()">Cancel</button>
+    <button class="btn btn-primary" id="importSubmitBtn" onclick="submitImportUrls()">Import</button>
+  </div>
+</dialog>
 
 <!-- ══════════════════════════════════════════════════════════ -->
 <!-- LIBRARY PANEL — mirrors local data/images.json and plugin snapshot -->
@@ -580,6 +634,94 @@
       document.getElementById("scanBtn").disabled = false;
       setStatus("Scan may still be running. Please wait a bit longer.");
       showScanErrorBanner("Scan is taking longer than expected. Check terminal logs for live progress.");
+    }, 10 * 60 * 1000);
+  }
+
+  // ── SCRAPER: Import from URLs ───────────────────────────────
+
+  function openImportModal() {
+    document.getElementById("importUrlsInput").value = "";
+    document.getElementById("importModal").showModal();
+  }
+
+  function closeImportModal() {
+    document.getElementById("importModal").close();
+  }
+
+  async function fetchImportStatus() {
+    const res = await fetch("/api/import-status", { cache: "no-store" });
+    if (!res.ok) throw new Error("Could not read import status");
+    return res.json();
+  }
+
+  async function submitImportUrls() {
+    const raw = document.getElementById("importUrlsInput").value;
+    const urls = raw.split("\n").map((line) => line.trim()).filter(Boolean);
+    if (urls.length === 0) return;
+
+    const submitBtn = document.getElementById("importSubmitBtn");
+    submitBtn.disabled = true;
+    document.getElementById("scanBtn").disabled = true;
+    setStatus(`Importing ${urls.length} URL${urls.length === 1 ? "" : "s"} — this runs in the background.`, "loading");
+
+    try {
+      const res = await fetch("/api/import-urls", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ urls }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Could not start import");
+
+      closeImportModal();
+      pollForImportResults(data.startedAt);
+    } catch (err) {
+      setStatus("Import failed. See details below.", "error");
+      showScanErrorBanner("Import did not start. " + err.message);
+      submitBtn.disabled = false;
+      document.getElementById("scanBtn").disabled = false;
+    }
+  }
+
+  let importPollInterval = null;
+
+  function pollForImportResults(startedAt) {
+    if (importPollInterval) clearInterval(importPollInterval);
+    const startedAtMs = startedAt ? Date.parse(startedAt) : Date.now();
+
+    importPollInterval = setInterval(async () => {
+      try {
+        const status = await fetchImportStatus();
+        if (!status.isRunning && status.startedAt && Date.parse(status.startedAt) >= startedAtMs) {
+          clearInterval(importPollInterval);
+          const images = await (await fetch("/api/images", { cache: "no-store" })).json();
+          allImages = images;
+          renderGrid(images);
+          showGridControls(true);
+
+          if (status.lastError) {
+            setStatus("Import failed. See details below.", "error");
+            showScanErrorBanner("Import failed: " + status.lastError);
+          } else if (status.lastWarning) {
+            setStatus(`Import finished with warnings — ${status.addedCount} added, ${status.duplicateCount} duplicate(s) skipped.`, "error");
+            showScanErrorBanner(status.lastWarning);
+          } else {
+            setStatus(`Import complete — ${status.addedCount} added, ${status.duplicateCount} duplicate(s) skipped.`, "success");
+            hideScanErrorBanner();
+          }
+
+          document.getElementById("importSubmitBtn").disabled = false;
+          document.getElementById("scanBtn").disabled = false;
+        }
+      } catch { /* ignore, keep polling */ }
+    }, 3000);
+
+    setTimeout(() => {
+      clearInterval(importPollInterval);
+      document.getElementById("importSubmitBtn").disabled = false;
+      document.getElementById("scanBtn").disabled = false;
+      setStatus("Import may still be running. Please wait a bit longer.");
+      showScanErrorBanner("Import is taking longer than expected. Check terminal logs for live progress.");
     }, 10 * 60 * 1000);
   }
 
