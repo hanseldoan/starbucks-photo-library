@@ -133,11 +133,6 @@ const SNAPSHOT_IMAGES = [
     "timestamp": "2026-08-12T14:38:16.123Z"
   },
   {
-    "url": "https://about.starbucks.com/uploads/2026/07/Starbucks-Palm-Springs-Customer-story-5-1536x2048.jpg",
-    "label": "Coffeehouse Experience Meet Me At Starbucks — Starbucks Palm Springs Customer Story 5",
-    "timestamp": "2026-08-12T14:38:16.123Z"
-  },
-  {
     "url": "https://about.starbucks.com/uploads/2026/07/Starbucks-Palm-Springs-Customer-story-3-2048x1365.jpg",
     "label": "Coffeehouse Experience Meet Me At Starbucks — Starbucks Palm Springs Customer Story 3",
     "timestamp": "2026-08-12T14:38:16.123Z"
@@ -158,18 +153,8 @@ const SNAPSHOT_IMAGES = [
     "timestamp": "2026-08-12T14:38:16.123Z"
   },
   {
-    "url": "https://about.starbucks.com/uploads/2026/07/Belgium-Brussels-1280x822.jpg",
-    "label": "Coffeehouse Experience Meet Me At Starbucks — Belgium Brussels",
-    "timestamp": "2026-08-12T14:38:16.123Z"
-  },
-  {
     "url": "https://about.starbucks.com/uploads/2026/05/Starbucks-Afternoon-Renton-Coffeehouse-11-1365x2048.jpg",
     "label": "Coffeehouse Experience Meet Me At Starbucks — Starbucks Afternoon Renton Coffeehouse 11",
-    "timestamp": "2026-08-12T14:38:16.123Z"
-  },
-  {
-    "url": "https://about.starbucks.com/uploads/2026/05/Starbucks-Afternoon-Renton-Coffeehouse-3-1536x1024.jpg",
-    "label": "Coffeehouse Experience Meet Me At Starbucks — Starbucks Afternoon Renton Coffeehouse 3",
     "timestamp": "2026-08-12T14:38:16.123Z"
   },
   {
@@ -368,11 +353,6 @@ const SNAPSHOT_IMAGES = [
     "timestamp": "2026-08-12T14:38:18.715Z"
   },
   {
-    "url": "https://about.starbucks.com/uploads/2026/02/Starbucks-Spring-Merch-2026-Cherry-Blossom-Collection-3-1024x1820.jpg",
-    "label": "cups & merch Your new favorite mug, and more — Starbucks Spring Merch 2026 Cherry Blossom Collection 3",
-    "timestamp": "2026-08-12T14:38:18.715Z"
-  },
-  {
     "url": "https://about.starbucks.com/uploads/2026/07/Orange-cream-1280x990.jpeg",
     "label": "cups & merch Your new favorite mug, and more — Orange Cream",
     "timestamp": "2026-08-12T14:38:18.715Z"
@@ -473,11 +453,6 @@ const SNAPSHOT_IMAGES = [
     "timestamp": "2026-08-12T14:38:21.202Z"
   },
   {
-    "url": "https://about.starbucks.com/uploads/2026/07/Fall-RTD-Lineup-1280x622.png",
-    "label": "Drinks & Food One cup at a time — Fall Rtd Lineup",
-    "timestamp": "2026-08-12T14:38:21.202Z"
-  },
-  {
     "url": "https://about.starbucks.com/uploads/2026/07/Starbucks-Fall-Menu-Preview-2026-1536x1536.jpg",
     "label": "Drinks & Food One cup at a time — Starbucks Fall Menu Preview 2026",
     "timestamp": "2026-08-12T14:38:21.202Z"
@@ -493,18 +468,8 @@ const SNAPSHOT_IMAGES = [
     "timestamp": "2026-08-12T14:38:23.970Z"
   },
   {
-    "url": "https://about.starbucks.com/uploads/2024/10/20230727_PA105_Military-Announcements-Still-Selects_FY23_005-1536x1024.jpg",
-    "label": "Belonging at Starbucks Creating a more welcoming experience — Pa105 Military Announcements Still Selects Fy23 005",
-    "timestamp": "2026-08-12T14:38:23.970Z"
-  },
-  {
     "url": "https://about.starbucks.com/uploads/2025/08/Starbucks-Partner-Palisades-1752x2048.jpeg",
     "label": "Belonging at Starbucks Creating a more welcoming experience — Starbucks Partner Palisades",
-    "timestamp": "2026-08-12T14:38:23.970Z"
-  },
-  {
-    "url": "https://about.starbucks.com/uploads/2020/09/SBX20201008-RacialEquity-Feature-1024x498.jpg",
-    "label": "Belonging at Starbucks Creating a more welcoming experience — Racialequity Feature",
     "timestamp": "2026-08-12T14:38:23.970Z"
   },
   {
@@ -528,26 +493,6 @@ const SNAPSHOT_IMAGES = [
     "timestamp": "2026-08-12T14:38:26.402Z"
   },
   {
-    "url": "https://about.starbucks.com/uploads/2026/04/HJCJ_2026_2Decatur-19-2048x1365.jpg",
-    "label": "Communities The power of positive impact — Hjcj 2026 2decatur 19",
-    "timestamp": "2026-08-12T14:38:26.402Z"
-  },
-  {
-    "url": "https://about.starbucks.com/uploads/2026/04/HJCJ_2026_1MtSi-19-2048x1365.jpg",
-    "label": "Communities The power of positive impact — Hjcj 2026 1mtsi 19",
-    "timestamp": "2026-08-12T14:38:26.403Z"
-  },
-  {
-    "url": "https://about.starbucks.com/uploads/2026/04/Hot-Java-Cool-Jazz-2026_7-2048x1365.jpg",
-    "label": "Communities The power of positive impact — Hot Java Cool Jazz 2026 7",
-    "timestamp": "2026-08-12T14:38:26.403Z"
-  },
-  {
-    "url": "https://about.starbucks.com/uploads/2026/04/Hot-Java-Cool-Jazz-1536x1024.jpg",
-    "label": "Communities The power of positive impact — Hot Java Cool Jazz",
-    "timestamp": "2026-08-12T14:38:26.403Z"
-  },
-  {
     "url": "https://about.starbucks.com/uploads/2021/05/SBX20240903-HungerRelief-Feature-2048x996.jpg",
     "label": "Communities The power of positive impact — Hungerrelief Feature",
     "timestamp": "2026-08-12T14:38:26.403Z"
@@ -555,31 +500,6 @@ const SNAPSHOT_IMAGES = [
   {
     "url": "https://about.starbucks.com/uploads/2024/11/FoodBank-1605x2048.jpg",
     "label": "Communities The power of positive impact — Foodbank",
-    "timestamp": "2026-08-12T14:38:26.403Z"
-  },
-  {
-    "url": "https://about.starbucks.com/uploads/2021/07/SBX20210721-FoodShareJourney-FeatureHorizontal-1024x498.jpg",
-    "label": "Communities The power of positive impact — Foodsharejourney Featurehorizontal",
-    "timestamp": "2026-08-12T14:38:26.403Z"
-  },
-  {
-    "url": "https://about.starbucks.com/uploads/2024/01/SBX20240117-MLK-FeatureHorizontal-1-1024x498.jpg",
-    "label": "Communities The power of positive impact — Mlk Featurehorizontal 1",
-    "timestamp": "2026-08-12T14:38:26.403Z"
-  },
-  {
-    "url": "https://about.starbucks.com/uploads/2024/09/SBX20240923-GlobalCommunityImpactGrants_Feature-2048x996.jpg",
-    "label": "Communities The power of positive impact — Globalcommunityimpactgrants Feature",
-    "timestamp": "2026-08-12T14:38:26.403Z"
-  },
-  {
-    "url": "https://about.starbucks.com/uploads/2025/04/Hot-Cool-Java-Cool-Jazz-5-2048x1365.jpg",
-    "label": "Communities The power of positive impact — Hot Cool Java Cool Jazz 5",
-    "timestamp": "2026-08-12T14:38:26.403Z"
-  },
-  {
-    "url": "https://about.starbucks.com/uploads/2024/04/SBX20240325-HJCJ-FeatureHorizontal-1280x622.jpg",
-    "label": "Communities The power of positive impact — Hjcj Featurehorizontal",
     "timestamp": "2026-08-12T14:38:26.403Z"
   },
   {
@@ -595,11 +515,6 @@ const SNAPSHOT_IMAGES = [
   {
     "url": "https://about.starbucks.com/uploads/2019/12/02-coffee-001-2048x1365.jpg",
     "label": "Farmers Ensuring A more Sustainable Future OF COFFEE for all — 02 Coffee 001",
-    "timestamp": "2026-08-12T14:38:28.944Z"
-  },
-  {
-    "url": "https://about.starbucks.com/uploads/2024/09/SBX20240927-CelebratingCoffeeCraft-Feature-2048x996.jpg",
-    "label": "Farmers Ensuring A more Sustainable Future OF COFFEE for all — Celebratingcoffeecraft Feature",
     "timestamp": "2026-08-12T14:38:28.944Z"
   },
   {
@@ -663,11 +578,6 @@ const SNAPSHOT_IMAGES = [
     "timestamp": "2026-08-12T14:38:31.623Z"
   },
   {
-    "url": "https://about.starbucks.com/uploads/2024/11/20240528-PA076-Neighborhood-Grants-Covenant-House-005-1280x853.jpg",
-    "label": "It starts with the green apron — Pa076 Neighborhood Grants Covenant House 005",
-    "timestamp": "2026-08-12T14:38:31.623Z"
-  },
-  {
     "url": "https://about.starbucks.com/uploads/2021/09/SBX092021-Starbucks-Sustainability-Commitment-Greener-Stores-2048x1366.jpg",
     "label": "Sustainability Continuing to build impact — Starbucks Sustainability Commitment Greener Stores",
     "timestamp": "2026-08-12T14:38:34.170Z"
@@ -728,11 +638,6 @@ const SNAPSHOT_IMAGES = [
     "timestamp": "2026-08-12T14:38:39.567Z"
   },
   {
-    "url": "https://about.starbucks.com/uploads/2024/05/PA068_04-SCAP-photo-essay-031-1536x975.jpg",
-    "label": "Photo essay: Caps off to the class of 2024 — Scap Photo Essay 031",
-    "timestamp": "2026-08-12T14:38:39.567Z"
-  },
-  {
     "url": "https://about.starbucks.com/uploads/2024/05/PA068_05-20240506-SCAP-graduation-072-1024x683.jpg",
     "label": "Photo essay: Caps off to the class of 2024 — 20240506 Scap Graduation 072",
     "timestamp": "2026-08-12T14:38:39.567Z"
@@ -768,11 +673,6 @@ const SNAPSHOT_IMAGES = [
     "timestamp": "2026-08-12T14:38:39.567Z"
   },
   {
-    "url": "https://about.starbucks.com/uploads/2024/05/PA068_07-SCAP-photo-essay-010-1024x1536.jpg",
-    "label": "Photo essay: Caps off to the class of 2024 — Scap Photo Essay 010",
-    "timestamp": "2026-08-12T14:38:39.567Z"
-  },
-  {
     "url": "https://about.starbucks.com/uploads/2024/05/PA068_07-SCAP-photo-essay-011-1024x1536.jpg",
     "label": "Photo essay: Caps off to the class of 2024 — Scap Photo Essay 011",
     "timestamp": "2026-08-12T14:38:39.567Z"
@@ -788,53 +688,8 @@ const SNAPSHOT_IMAGES = [
     "timestamp": "2026-08-12T14:38:39.567Z"
   },
   {
-    "url": "https://about.starbucks.com/uploads/2024/05/PA068_08-SCAP-photo-essay-026-1536x1024.jpg",
-    "label": "Photo essay: Caps off to the class of 2024 — Scap Photo Essay 026",
-    "timestamp": "2026-08-12T14:38:39.567Z"
-  },
-  {
-    "url": "https://about.starbucks.com/uploads/2026/04/Hot-Java-Cool-Jazz-2026_4-2048x1365.jpg",
-    "label": "Photo essay: Caps off to the class of 2024 — Hot Java Cool Jazz 2026 4",
-    "timestamp": "2026-08-12T14:38:39.567Z"
-  },
-  {
-    "url": "https://about.starbucks.com/uploads/2024/08/SBX2024-Starbucks-Barista-EH-Paralympic-Feature-1280x622.jpg",
-    "label": "‘This amazing life’ – The captain of the U.S. Paralympic Equestrian team is a Starbucks barista — Starbucks Barista Eh Paralympic Feature",
-    "timestamp": "2026-08-12T14:38:42.037Z"
-  },
-  {
-    "url": "https://about.starbucks.com/uploads/2024/08/Starbucks-barista-EH-Paralympic-Equestrian-8-1536x1083.jpg",
-    "label": "‘This amazing life’ – The captain of the U.S. Paralympic Equestrian team is a Starbucks barista — Starbucks Barista Eh Paralympic Equestrian 8",
-    "timestamp": "2026-08-12T14:38:42.037Z"
-  },
-  {
-    "url": "https://about.starbucks.com/uploads/2024/08/Starbucks-barista-EH-Paralympic-Equestrian-6-1536x1025.jpg",
-    "label": "‘This amazing life’ – The captain of the U.S. Paralympic Equestrian team is a Starbucks barista — Starbucks Barista Eh Paralympic Equestrian 6",
-    "timestamp": "2026-08-12T14:38:42.037Z"
-  },
-  {
-    "url": "https://about.starbucks.com/uploads/2024/08/Starbucks-barista-EH-Paralympic-Equestrian-7-1536x1025.jpg",
-    "label": "‘This amazing life’ – The captain of the U.S. Paralympic Equestrian team is a Starbucks barista — Starbucks Barista Eh Paralympic Equestrian 7",
-    "timestamp": "2026-08-12T14:38:42.037Z"
-  },
-  {
-    "url": "https://about.starbucks.com/uploads/2024/08/Starbucks-barista-EH-Paralympic-Equestrian-9-1536x1025.jpg",
-    "label": "‘This amazing life’ – The captain of the U.S. Paralympic Equestrian team is a Starbucks barista — Starbucks Barista Eh Paralympic Equestrian 9",
-    "timestamp": "2026-08-12T14:38:42.037Z"
-  },
-  {
     "url": "https://about.starbucks.com/uploads/2024/08/Starbucks-barista-EH-Paralympic-Equestrian-2-1280x1920.jpg",
     "label": "‘This amazing life’ – The captain of the U.S. Paralympic Equestrian team is a Starbucks barista — Starbucks Barista Eh Paralympic Equestrian 2",
-    "timestamp": "2026-08-12T14:38:42.037Z"
-  },
-  {
-    "url": "https://about.starbucks.com/uploads/2024/08/Starbucks-barista-EH-Paralympic-Equestrian-3-1280x1918.jpg",
-    "label": "‘This amazing life’ – The captain of the U.S. Paralympic Equestrian team is a Starbucks barista — Starbucks Barista Eh Paralympic Equestrian 3",
-    "timestamp": "2026-08-12T14:38:42.037Z"
-  },
-  {
-    "url": "https://about.starbucks.com/uploads/2024/08/Starbucks-barista-EH-Paralympic-Equestrian-5-1280x1918.jpg",
-    "label": "‘This amazing life’ – The captain of the U.S. Paralympic Equestrian team is a Starbucks barista — Starbucks Barista Eh Paralympic Equestrian 5",
     "timestamp": "2026-08-12T14:38:42.037Z"
   },
   {
@@ -843,63 +698,8 @@ const SNAPSHOT_IMAGES = [
     "timestamp": "2026-08-12T14:38:42.039Z"
   },
   {
-    "url": "https://about.starbucks.com/uploads/2024/02/SBX2024213-Starbucks-accessible-store-artist-feature-1024x498.jpg",
-    "label": "A place in the world: Deaf artist hopes mural at D.C. Starbucks sparks conversations about inclusion, accessibility — Starbucks Accessible Store Artist Feature",
-    "timestamp": "2026-08-12T14:38:47.717Z"
-  },
-  {
-    "url": "https://about.starbucks.com/uploads/2024/02/SBX2024213-Starbucks-Mural-Arist-Ryan-Seslow-4-2048x1365.jpg",
-    "label": "A place in the world: Deaf artist hopes mural at D.C. Starbucks sparks conversations about inclusion, accessibility — Starbucks Mural Arist Ryan Seslow 4",
-    "timestamp": "2026-08-12T14:38:47.717Z"
-  },
-  {
-    "url": "https://about.starbucks.com/uploads/2024/02/SBX2024213-Starbucks-Mural-Arist-Ryan-Seslow-2-2048x1358.jpg",
-    "label": "A place in the world: Deaf artist hopes mural at D.C. Starbucks sparks conversations about inclusion, accessibility — Starbucks Mural Arist Ryan Seslow 2",
-    "timestamp": "2026-08-12T14:38:47.717Z"
-  },
-  {
-    "url": "https://about.starbucks.com/uploads/2024/02/SBX2024213-Starbucks-Mural-Arist-Ryan-Seslow-1-2048x1358.jpg",
-    "label": "A place in the world: Deaf artist hopes mural at D.C. Starbucks sparks conversations about inclusion, accessibility — Starbucks Mural Arist Ryan Seslow 1",
-    "timestamp": "2026-08-12T14:38:47.717Z"
-  },
-  {
-    "url": "https://about.starbucks.com/uploads/2024/02/SBX2024213-Starbucks-Mural-Arist-Ryan-Seslow-3-2048x1358.jpg",
-    "label": "A place in the world: Deaf artist hopes mural at D.C. Starbucks sparks conversations about inclusion, accessibility — Starbucks Mural Arist Ryan Seslow 3",
-    "timestamp": "2026-08-12T14:38:47.717Z"
-  },
-  {
-    "url": "https://about.starbucks.com/uploads/2024/06/20240528-PA076-Neighborhood-Grants-Prism-United-004-1365x2048.jpg",
-    "label": "Neighborhood Grants — Pa076 Neighborhood Grants Prism United 004",
-    "timestamp": "2026-08-12T14:38:50.487Z"
-  },
-  {
-    "url": "https://about.starbucks.com/uploads/2025/05/SBX20250508-Impact-Report-Intro-Grants-1536x1024.jpg",
-    "label": "Neighborhood Grants — Impact Report Intro Grants",
-    "timestamp": "2026-08-12T14:38:50.487Z"
-  },
-  {
-    "url": "https://about.starbucks.com/uploads/2024/12/07-neighborhood-grants-002-2048x1365.jpg",
-    "label": "Neighborhood Grants — 07 Neighborhood Grants 002",
-    "timestamp": "2026-08-12T14:38:50.487Z"
-  },
-  {
     "url": "https://about.starbucks.com/uploads/2024/02/SBX20240229-NeighborhoodGrantsStory-FeatureHorizontal-1280x622.jpg",
     "label": "Neighborhood Grants — Neighborhoodgrantsstory Featurehorizontal",
-    "timestamp": "2026-08-12T14:38:50.487Z"
-  },
-  {
-    "url": "https://about.starbucks.com/uploads/2024/10/Neighborhood-Grants_The-Starbucks-Foundation-Logo-Lockup_US_EN-1536x178.webp",
-    "label": "Neighborhood Grants — Neighborhood Grants The Starbucks Foundation Logo Lockup Us En",
-    "timestamp": "2026-08-12T14:38:50.487Z"
-  },
-  {
-    "url": "https://about.starbucks.com/uploads/2025/09/Starbucks-Neighborhood-Grants-Resource-Center-Dallas-4-2048x1366.jpg",
-    "label": "Neighborhood Grants — Starbucks Neighborhood Grants Resource Center Dallas 4",
-    "timestamp": "2026-08-12T14:38:50.487Z"
-  },
-  {
-    "url": "https://about.starbucks.com/uploads/2025/09/Starbucks-Neighborhood-Grants-Resource-Center-Dallas-1-2048x1379.jpg",
-    "label": "Neighborhood Grants — Starbucks Neighborhood Grants Resource Center Dallas 1",
     "timestamp": "2026-08-12T14:38:50.487Z"
   },
   {
@@ -908,43 +708,8 @@ const SNAPSHOT_IMAGES = [
     "timestamp": "2026-08-12T14:38:50.487Z"
   },
   {
-    "url": "https://about.starbucks.com/uploads/2025/09/Starbucks-Neighborhood-Grants-Resource-Center-Dallas-2-2048x1365.jpg",
-    "label": "Neighborhood Grants — Starbucks Neighborhood Grants Resource Center Dallas 2",
-    "timestamp": "2026-08-12T14:38:50.487Z"
-  },
-  {
-    "url": "https://about.starbucks.com/uploads/2025/09/Starbucks-Neighborhood-Grants-Harlem-Grown-New-York-2-2048x1368.jpg",
-    "label": "Neighborhood Grants — Starbucks Neighborhood Grants Harlem Grown New York 2",
-    "timestamp": "2026-08-12T14:38:50.487Z"
-  },
-  {
     "url": "https://about.starbucks.com/uploads/2025/09/Starbucks-Neighborhood-Grants-Harlem-Grown-New-York-3-2048x1368.jpg",
     "label": "Neighborhood Grants — Starbucks Neighborhood Grants Harlem Grown New York 3",
-    "timestamp": "2026-08-12T14:38:50.487Z"
-  },
-  {
-    "url": "https://about.starbucks.com/uploads/2025/09/Starbucks-Neighborhood-Grants-Harlem-Grown-New-York-4-2048x1368.jpg",
-    "label": "Neighborhood Grants — Starbucks Neighborhood Grants Harlem Grown New York 4",
-    "timestamp": "2026-08-12T14:38:50.487Z"
-  },
-  {
-    "url": "https://about.starbucks.com/uploads/2025/09/Starbucks-Neighborhood-Grants-Harlem-Grown-New-York-1-2048x1368.jpg",
-    "label": "Neighborhood Grants — Starbucks Neighborhood Grants Harlem Grown New York 1",
-    "timestamp": "2026-08-12T14:38:50.487Z"
-  },
-  {
-    "url": "https://about.starbucks.com/uploads/2025/09/Starbucks-Neighborhood-Grants-Opportunity-Village-Nevada-2-2048x1365.jpg",
-    "label": "Neighborhood Grants — Starbucks Neighborhood Grants Opportunity Village Nevada 2",
-    "timestamp": "2026-08-12T14:38:50.487Z"
-  },
-  {
-    "url": "https://about.starbucks.com/uploads/2025/09/Starbucks-Neighborhood-Grants-Opportunity-Village-Nevada-3-2048x1365.jpg",
-    "label": "Neighborhood Grants — Starbucks Neighborhood Grants Opportunity Village Nevada 3",
-    "timestamp": "2026-08-12T14:38:50.487Z"
-  },
-  {
-    "url": "https://about.starbucks.com/uploads/2025/09/Starbucks-Neighborhood-Grants-Opportunity-Village-Nevada-1-1365x2048.jpg",
-    "label": "Neighborhood Grants — Starbucks Neighborhood Grants Opportunity Village Nevada 1",
     "timestamp": "2026-08-12T14:38:50.487Z"
   },
   {
@@ -965,11 +730,6 @@ const SNAPSHOT_IMAGES = [
   {
     "url": "https://about.starbucks.com/uploads/2026/07/Road-Trip-Cold-Cup-1366x2048.jpg",
     "label": "Multimedia — Road Trip Cold Cup",
-    "timestamp": "2026-08-12T14:38:56.087Z"
-  },
-  {
-    "url": "https://about.starbucks.com/uploads/2026/07/Stainless-Steel-Lidded-Cup-1365x2048.jpg",
-    "label": "Multimedia — Stainless Steel Lidded Cup",
     "timestamp": "2026-08-12T14:38:56.087Z"
   },
   {
@@ -1156,6 +916,76 @@ const SNAPSHOT_IMAGES = [
     "url": "https://about.starbucks.com/uploads/2026/08/SBX-FALL-26-AFTN_20_HotPumpkinSpiceLatte-PumpkinCreamCheeseMuffin_MASTER-format-jpg-300dpi-scaled-e1787094027527-1024x1314.jpeg",
     "label": "Sbx Fall 26 Aftn 20 Hotpumpkinspicelatte Pumpkincreamcheesemuffin Master Format Jpg 300dpi Scaled E1787094027527 — Sbx Fall 26 Aftn 20 Hotpumpkinspicelatte Pumpkincreamcheesemuffin Master Format Jpg 300dpi Scaled E1787094027527",
     "timestamp": "2026-09-02T15:18:55.917Z"
+  },
+  {
+    "url": "https://about.starbucks.com/uploads/2026/08/Starbucks-Aerocano.jpeg",
+    "label": "Starbucks Aerocano — Starbucks Aerocano",
+    "timestamp": "2026-09-03T15:37:07.911Z"
+  },
+  {
+    "url": "https://about.starbucks.com/uploads/2026/08/Starbucks-MiniPies.jpeg",
+    "label": "Starbucks Minipies — Starbucks Minipies",
+    "timestamp": "2026-09-03T15:37:08.490Z"
+  },
+  {
+    "url": "https://about.starbucks.com/uploads/2026/08/Starbucks-Fall-menu-2026-.jpg",
+    "label": "Starbucks Fall Menu 2026 — Starbucks Fall Menu 2026",
+    "timestamp": "2026-09-03T15:37:09.032Z"
+  },
+  {
+    "url": "https://about.starbucks.com/uploads/2026/08/SBX-FALL1-26_11_PecanCrunchOatLatte-IcedPecanCrunchOatLatte_CMYK-format-jpg-72dpi-scaled.jpg",
+    "label": "Sbx Fall1 26 11 Pecancrunchoatlatte Icedpecancrunchoatlatte Cmyk Format Jpg 72dpi Scaled — Sbx Fall1 26 11 Pecancrunchoatlatte Icedpecancrunchoatlatte Cmyk Format Jpg 72dpi Scaled",
+    "timestamp": "2026-09-03T15:37:09.573Z"
+  },
+  {
+    "url": "https://about.starbucks.com/uploads/2026/08/Starbucks-Iced-Banana-Bread-Latte-scaled.jpeg",
+    "label": "Starbucks Iced Banana Bread Latte Scaled — Starbucks Iced Banana Bread Latte Scaled",
+    "timestamp": "2026-09-03T15:37:10.143Z"
+  },
+  {
+    "url": "https://about.starbucks.com/uploads/2026/08/Starbucks-and-PSL-Society-Collection-4-1366x2048.jpeg",
+    "label": "Starbucks And Psl Society Collection 4 — Starbucks And Psl Society Collection 4",
+    "timestamp": "2026-09-03T15:37:10.709Z"
+  },
+  {
+    "url": "https://about.starbucks.com/uploads/2026/08/20260825_fall_launch_026-scaled.jpg",
+    "label": "Fall Launch 026 Scaled — Fall Launch 026 Scaled",
+    "timestamp": "2026-09-03T15:37:11.773Z"
+  },
+  {
+    "url": "https://about.starbucks.com/uploads/2026/08/20260825_fall_launch_030-scaled.jpg",
+    "label": "Fall Launch 030 Scaled — Fall Launch 030 Scaled",
+    "timestamp": "2026-09-03T15:37:12.329Z"
+  },
+  {
+    "url": "https://about.starbucks.com/uploads/2026/08/20260825_fall_launch_044-scaled.jpg",
+    "label": "Fall Launch 044 Scaled — Fall Launch 044 Scaled",
+    "timestamp": "2026-09-03T15:37:12.879Z"
+  },
+  {
+    "url": "https://about.starbucks.com/uploads/2026/06/Starbucks-Unicorn-Frappuccino-Blended-Beverage.png",
+    "label": "Starbucks Unicorn Frappuccino Blended Beverage — Starbucks Unicorn Frappuccino Blended Beverage",
+    "timestamp": "2026-09-03T15:37:13.431Z"
+  },
+  {
+    "url": "https://about.starbucks.com/uploads/2026/03/UnicornCoachella-.png",
+    "label": "Unicorncoachella — Unicorncoachella",
+    "timestamp": "2026-09-03T15:37:13.976Z"
+  },
+  {
+    "url": "https://about.starbucks.com/uploads/2026/06/Starbucks-Pike-Place-Store-5-scaled.jpg",
+    "label": "Starbucks Pike Place Store 5 Scaled — Starbucks Pike Place Store 5 Scaled",
+    "timestamp": "2026-09-03T15:37:14.518Z"
+  },
+  {
+    "url": "https://about.starbucks.com/uploads/2026/05/Starbucks-Afternoon-Renton-Coffeehouse-2.jpg",
+    "label": "Starbucks Afternoon Renton Coffeehouse 2 — Starbucks Afternoon Renton Coffeehouse 2",
+    "timestamp": "2026-09-03T15:37:15.057Z"
+  },
+  {
+    "url": "https://about.starbucks.com/uploads/2026/05/Starbucks-Afternoon-Renton-Coffeehouse-3.jpg",
+    "label": "Starbucks Afternoon Renton Coffeehouse 3 — Starbucks Afternoon Renton Coffeehouse 3",
+    "timestamp": "2026-09-03T15:37:15.593Z"
   }
 ];
 
